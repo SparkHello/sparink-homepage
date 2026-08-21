@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import matter from '../../../lib/frontmatter';
 import Link from 'next/link';
 
 // 🌟 核心升级：引入 Next.js 现代统一解析流
@@ -279,9 +279,11 @@ export default async function ChatterDetail({ params }: { params: Promise<{ slug
                 />
               </div>
 
-              <div className="mt-10 md:mt-12">
-                <Comments />
-              </div>
+              {siteConfig.features.comments && (
+                <div className="mt-10 md:mt-12">
+                  <Comments />
+                </div>
+              )}
 
             </div>
           </article>

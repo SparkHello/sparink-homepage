@@ -7,6 +7,7 @@ import { siteConfig } from '../siteConfig';
 export default function SiteDashboard() {
   const [timeStr, setTimeStr] = useState('');
   const [uptimeStr, setUptimeStr] = useState('');
+  const [isPrelaunch, setIsPrelaunch] = useState(false);
 
   // 🌟 从配置中读取建站时间
   const START_DATE = new Date(siteConfig.buildDate || '2026-03-23T00:00:00').getTime();
@@ -19,6 +20,13 @@ export default function SiteDashboard() {
 
       // 计算运行时间
       const diff = now.getTime() - START_DATE;
+      if (diff < 0) {
+        setIsPrelaunch(true);
+        setUptimeStr('2026.08.22');
+        return;
+      }
+
+      setIsPrelaunch(false);
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
       setUptimeStr(`${days}天 ${hours}小时`);
@@ -30,8 +38,9 @@ export default function SiteDashboard() {
   }, [START_DATE]);
 
   return (
-    // 横向铺满 12 列的长条矩阵
-    <div className="md:col-span-12 rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden flex flex-col md:flex-row items-stretch transition-colors duration-700 h-auto md:h-20 group">
+    <div>
+      {/* 横向铺满 12 列的长条矩阵 */}
+      <div className="md:col-span-12 rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden flex flex-col md:flex-row items-stretch transition-colors duration-700 h-auto md:h-20 group">
 
       {/* 左侧：翻页时钟特效 (使用等宽字体) */}
       <div className="bg-slate-900 dark:bg-black text-white px-8 py-4 md:py-0 flex items-center justify-center font-mono text-2xl md:text-3xl font-black tracking-widest shadow-inner relative overflow-hidden group-hover:text-indigo-400 transition-colors">
@@ -46,8 +55,8 @@ export default function SiteDashboard() {
 
         {/* 运行时间 */}
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-          <span>系统已稳定运行：<span className="text-indigo-600 dark:text-indigo-400 font-black">{uptimeStr}</span></span>
+          <span className={`w-2 h-2 rounded-full animate-pulse ${isPrelaunch ? 'bg-amber-500' : 'bg-green-500'}`}></span>
+          <span>{isPrelaunch ? '计划上线：' : '系统已稳定运行：'}<span className="text-indigo-600 dark:text-indigo-400 font-black">{uptimeStr}</span></span>
         </div>
 
         {/* 技术栈徽章 (🌟 动态映射 siteConfig 里的数组) */}
@@ -76,6 +85,19 @@ export default function SiteDashboard() {
         )}
 
       </div>
+      </div>
+
+      <p className="mt-3 px-4 text-center text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
+        基于{' '}
+        <a href="https://github.com/heiehiehi/XinghuisamaBlogs" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-indigo-500 transition-colors">
+          XingHuiSama 的 XHBlogs
+        </a>{' '}
+        修改 ·{' '}
+        <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-indigo-500 transition-colors">
+          CC BY-NC 4.0
+        </a>{' '}
+        · Sparink 个人化版本
+      </p>
     </div>
   );
 }

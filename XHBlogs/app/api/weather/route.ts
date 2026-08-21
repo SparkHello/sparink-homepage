@@ -1,7 +1,12 @@
 // app/api/weather/route.ts
 import { NextResponse } from 'next/server';
+import { siteConfig } from '../../../siteConfig';
 
 export async function GET() {
+  if (!siteConfig.features.weather) {
+    return NextResponse.json({ code: "404", message: "Weather disabled" }, { status: 404 });
+  }
+
   const token = process.env.QWEATHER_KEY;
   const locationId = "101010100"; // 北京
 
@@ -28,7 +33,7 @@ export async function GET() {
           // 🌟 按照文档要求的 Header 认证格式
           'Authorization': `Bearer ${token}`,
           'Accept-Encoding': 'gzip',
-          'User-Agent': 'Vercel-Weather-Proxy/1.0'
+          'User-Agent': 'Sparink-Weather-Proxy/1.0'
         },
         cache: 'no-store'
       });
@@ -51,6 +56,6 @@ export async function GET() {
 
   return NextResponse.json({
     code: "500",
-    message: "认证协议对接失败，请检查是否在 Vercel 填写了正确的 Token"
+    message: "认证协议对接失败，请检查 Cloudflare Worker Secret 中的 Token 配置"
   }, { status: 500 });
 }

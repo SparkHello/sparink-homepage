@@ -51,7 +51,7 @@ export default function PhotoWallClient() {
               <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
                 <div>
                   <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-widest mb-2 transition-colors duration-700">光影画廊</h1>
-                  <p className="text-slate-600 dark:text-slate-400 font-medium tracking-wider transition-colors duration-700">定格时间，封存泰拉与现实的每一次心跳</p>
+                  <p className="text-slate-600 dark:text-slate-400 font-medium tracking-wider transition-colors duration-700">以后会在这里收集摄影、硬件与生活里的光影。</p>
                 </div>
 
                 <div className="relative w-full md:w-80 group">
@@ -135,9 +135,17 @@ export default function PhotoWallClient() {
                   ))}
                 </div>
 
+                {!activeQuery && albums.length === 0 && (
+                  <div className="rounded-[32px] bg-white/45 dark:bg-slate-800/45 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl px-6 py-16 text-center">
+                    <div className="text-5xl mb-5" aria-hidden="true">📷</div>
+                    <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">第一卷胶片还没有冲洗</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">相册结构已经准备好，等以后慢慢加入自己的照片。</p>
+                  </div>
+                )}
+
                 {activeQuery && matchedAlbums.length === 0 && matchedPhotos.length === 0 && (
                   <div className="text-center py-20 text-slate-500 font-medium">
-                    在泰拉大陆的任何角落都没找到相关的记忆...
+                    没有找到与“{searchQuery}”相关的照片或相册。
                   </div>
                 )}
               </div>

@@ -687,12 +687,12 @@ export default function AlchemyLab({ posts = [], chatters = [], moments = [] }: 
       </div>
 
       {/* 留言区域 */}
-      <div className="w-full max-w-4xl mx-auto mt-10 mb-16 px-4">
+      {siteConfig.features.comments && <div className="w-full max-w-4xl mx-auto mt-10 mb-16 px-4">
          <h2 className="text-xl font-black text-[#8b6b4a] mb-2 font-serif text-center uppercase tracking-widest border-b border-[#8b6b4a]/30 pb-4">
             「 {formattedMonth} 的访客留言簿 」
          </h2>
          <LabComments key={`gitalk-${currentMonthStr}`} pageId={`workshop-${currentMonthStr}`} />
-      </div>
+      </div>}
 
     </motion.div>
   );

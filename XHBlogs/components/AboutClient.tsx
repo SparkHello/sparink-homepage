@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, MessageSquare, Sparkles, Activity } from 'lucide-react';
-import Comments from './Comments';
+import { Activity } from 'lucide-react';
 import { siteConfig } from '../siteConfig';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -154,7 +153,7 @@ export default function AboutClient({
               onClick={() => handleTabChange('activity')}
               className={`flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-black transition-all duration-300 ${activeTab === 'activity' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-500 hover:text-indigo-500'}`}
             >
-              研究动态
+              最近动态
             </button>
           </div>
         </div>
@@ -214,7 +213,6 @@ export default function AboutClient({
                 `}</style>
                 <div className="prose prose-slate dark:prose-invert prose-base md:prose-lg max-w-none text-slate-800 dark:text-slate-200 font-serif transition-colors duration-700 leading-relaxed scroll-smooth" dangerouslySetInnerHTML={{ __html: contentHtml }} />
               </div>
-              <div className="mt-12 md:mt-16"><Comments /></div>
             </motion.div>
           )}
 
@@ -224,7 +222,7 @@ export default function AboutClient({
               <div className="mb-12 p-5 md:p-8 bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-inner">
                 <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
                   <Activity size={20} className="text-green-500" />
-                  {activities.length} contributions in the last year
+                  过去一年记录了 {activities.length} 次更新
                 </h3>
 
                 <div className="flex gap-2">
@@ -348,7 +346,7 @@ export default function AboutClient({
                 })}
 
                 {activities.length === 0 && (
-                  <div className="text-slate-500 text-sm font-bold">源石数据库中暂无活动记录...</div>
+                  <div className="text-slate-500 text-sm font-bold">这里会记录以后发布的文章与动态。</div>
                 )}
               </div>
 

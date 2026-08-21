@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
+import { siteConfig } from '../../../siteConfig';
 
 export async function POST(req: Request) {
+  if (!siteConfig.features.comments) {
+    return NextResponse.json({ error: 'Comments disabled' }, { status: 404 });
+  }
+
   try {
     // 1. 读取 Gitalk 发过来的数据
     const body = await req.text();

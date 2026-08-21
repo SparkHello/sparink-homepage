@@ -27,8 +27,23 @@ const notoSerif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: siteConfig.title,
+  metadataBase: new URL(siteConfig.siteUrl),
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.authorName}`,
+  },
   description: siteConfig.bio,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    url: "/",
+    siteName: siteConfig.title,
+    title: siteConfig.title,
+    description: siteConfig.bio,
+    images: [{ url: siteConfig.faviconUrl, width: 1254, height: 1254, alt: `${siteConfig.authorName} 的头像` }],
+  },
+  robots: { index: true, follow: true },
   icons: {
     icon: siteConfig.faviconUrl,
     apple: siteConfig.faviconUrl,
@@ -87,36 +102,46 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-400/30 dark:bg-purple-900/30 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
 
                 {/* 隐藏手机端高负载粒子特效 */}
-                <div className="hidden md:block absolute inset-0 w-full h-full">
-                  <BackgroundEffects />
-                </div>
+                {siteConfig.features.desktopEffects && (
+                  <div className="hidden md:block absolute inset-0 w-full h-full">
+                    <BackgroundEffects />
+                  </div>
+                )}
               </div>
 
               {/* 隐藏手机端弹幕 */}
-              <div className="hidden md:block">
-                <DanmakuBackground />
-              </div>
+              {siteConfig.features.desktopEffects && (
+                <div className="hidden md:block">
+                  <DanmakuBackground />
+                </div>
+              )}
 
               <div className="relative z-10 flex-1 flex flex-col">
                 {children}
               </div>
 
-              <div className="hidden md:block">
-                <FloatingPlayer />
-              </div>
+              {siteConfig.features.music && (
+                <div className="hidden md:block">
+                  <FloatingPlayer />
+                </div>
+              )}
 
-              <div className="hidden md:block">
-                <GlobalToolbox />
-              </div>
+              {siteConfig.features.toolbox && (
+                <div className="hidden md:block">
+                  <GlobalToolbox />
+                </div>
+              )}
 
               <div className="md:hidden block">
                 <MobileBackButton />
               </div>
 
               {/* 隐藏手机端点击粒子 */}
-              <div className="hidden md:block">
-                <ClickEffect />
-              </div>
+              {siteConfig.features.desktopEffects && (
+                <div className="hidden md:block">
+                  <ClickEffect />
+                </div>
+              )}
             </div>
 
             <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
@@ -128,9 +153,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             `}} />
           </MusicProvider>
 
-          <div className="hidden md:block">
-            <CyberCat />
-          </div>
+          {siteConfig.features.aiCat && (
+            <div className="hidden md:block">
+              <CyberCat />
+            </div>
+          )}
 
         </ThemeProvider>
       </body>

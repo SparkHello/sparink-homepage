@@ -1,7 +1,6 @@
-// src/components/ClientSocials.tsx
 "use client";
 
-import { siteConfig } from '../siteConfig'; // 确保路径正确
+import { siteConfig } from '../siteConfig';
 
 // 这里我们整合了 SocialBtn 和 ClientSocials
 function SocialBtn({ type, url, onClick }: { type: string, url?: string, onClick?: () => void }) {
@@ -26,23 +25,14 @@ function SocialBtn({ type, url, onClick }: { type: string, url?: string, onClick
       {getIcon()}
     </div>
   );
-  return url ? <a href={url} target="_blank" rel="noopener noreferrer">{content}</a> : content;
+  return url ? <a href={url} target={url.startsWith('mailto:') ? undefined : '_blank'} rel={url.startsWith('mailto:') ? undefined : 'noopener noreferrer'}>{content}</a> : content;
 }
 
 export default function ClientSocials() {
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    alert(`✨ ${label}已复制到剪贴板: ${text}`);
-  };
-
   return (
     <div className="flex gap-2 flex-wrap justify-center mt-4">
-      <SocialBtn type="github" url={siteConfig.social?.github} />
-      <SocialBtn type="gitee" url={siteConfig.social?.gitee} />
-      <SocialBtn type="google" url={siteConfig.social?.google} />
-      <SocialBtn type="email" onClick={() => copyToClipboard(siteConfig.social?.email || '', '邮箱')} />
-      <SocialBtn type="qq" onClick={() => copyToClipboard(siteConfig.social?.qq || '', 'QQ号')} />
-      <SocialBtn type="wechat" onClick={() => copyToClipboard(siteConfig.social?.wechat || '', '微信号')} />
+      {siteConfig.social.github && <SocialBtn type="github" url={siteConfig.social.github} />}
+      {siteConfig.social.email && <SocialBtn type="email" url={`mailto:${siteConfig.social.email}`} />}
     </div>
   );
 }

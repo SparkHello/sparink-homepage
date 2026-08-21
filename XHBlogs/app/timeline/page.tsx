@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import matter from '../../lib/frontmatter';
 import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
 import { siteConfig } from '../../siteConfig';
@@ -9,7 +9,7 @@ import TimelineClient from '../../components/TimelineClient';
 import { ToastProvider } from '../../components/ToastProvider';
 
 export const metadata = {
-  title: "归档与探索 | " + siteConfig.title,
+  title: "归档与探索",
 };
 
 export default function Timeline() {

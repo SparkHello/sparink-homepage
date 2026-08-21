@@ -69,17 +69,17 @@ export default function Navbar() {
   }, [lastScrollY]);
 
   const navLinks = [
-    { name: '首页', href: '/' },
-    { name: '项目', href: '/projects' },
-    { name: '归档', href: '/timeline' },
-    { name: '照片墙', href: '/photowall' },
-    { name: '音乐', href: '/music' },
-    { name: '灵境', href: '/tree' },
-    { name: '说说', href: '/moments' },
-    { name: '杂谈', href: '/chatter' },
-    { name: '友链', href: '/friends' },
-    { name: '关于', href: '/about' },
-  ];
+    { name: '首页', href: '/', enabled: true },
+    { name: '项目', href: '/projects', enabled: true },
+    { name: '归档', href: '/timeline', enabled: true },
+    { name: '照片墙', href: '/photowall', enabled: siteConfig.features.photoWall },
+    { name: '音乐', href: '/music', enabled: siteConfig.features.music },
+    { name: '灵境', href: '/tree', enabled: siteConfig.features.lab },
+    { name: '说说', href: '/moments', enabled: siteConfig.features.moments },
+    { name: '杂谈', href: '/chatter', enabled: siteConfig.features.chatter },
+    { name: '友链', href: '/friends', enabled: siteConfig.features.friends },
+    { name: '关于', href: '/about', enabled: true },
+  ].filter((link) => link.enabled);
 
   // 🌟 核心：过滤掉“灵境”，专供手机端使用，保证圆盘自动重新均匀排布
   const mobileNavLinks = navLinks.filter(link => link.href !== '/tree');
@@ -95,7 +95,6 @@ export default function Navbar() {
             {siteConfig.navAfter || '宝藏之地'}
           </Link>
           <nav className="flex gap-8 text-sm font-bold">
-            {/* PC端依然使用全量的 navLinks */}
             {navLinks.map((link) => {
               const isActive = pathname === link.href || pathname === `${link.href}/`;
               return (

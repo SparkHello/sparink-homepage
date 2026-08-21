@@ -1,47 +1,90 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import matter from '../../lib/frontmatter';
 
 // 引入前台客户端组件
 import CreativeWorkshopClient from './CreativeWorkshopClient';
 
-function getLocalItems(directoryName: string, typeName: string) {
-  const dirPath = path.join(process.cwd(), directoryName);
-  let items: any[] = [];
+type LocalItem = {
+  id: string;
+  slug: string;
+  title: string;
+  type: string;
+  date: string;
+  cover: string | null;
+  content: string;
+};
+
+function parseLocalItem(fileName: string, typeName: string, source: string): LocalItem {
+  const { data, content } = matter(source);
+  const realSlug = fileName.replace(/\.md$/, '');
+
+  return {
+    id: data.id || realSlug,
+    slug: realSlug,
+    title: data.title || '',
+    type: typeName,
+    date: data.date || '2026-05-01',
+    cover: data.cover || data.image || null,
+    content: content.trim(),
+  };
+}
+
+function getPostItems() {
+  const directory = path.join(process.cwd(), 'posts');
   try {
-    if (fs.existsSync(dirPath)) {
-      const fileNames = fs.readdirSync(dirPath).filter(f => f.endsWith('.md'));
-      items = fileNames.map(fileName => {
-        const fullPath = path.join(dirPath, fileName);
-        // 🌟 核心：把 content（正文内容）和 data（头部参数）解构出来！
-        const { data, content } = matter(fs.readFileSync(fullPath, 'utf8'));
-
-        // 提取真正的文件名作为路由 slug
-        const realSlug = fileName.replace(/\.md$/, '');
-
-        return {
-          id: data.id || realSlug,
-          slug: realSlug, // 🌟 强制保留真实的 slug 供路由跳转使用
-          title: data.title || '',
-          type: typeName,
-          date: data.date || '2026-05-01',
-          // 🌟 核心修复：把 cover（封面图）提取出来传给前台！如果写的是 image 也兼容
-          cover: data.cover || data.image || null,
-          // 把正文传给前台，去掉可能存在的换行符，限制长度防止卡片撑爆
-          content: content.trim()
-        };
-      });
-    }
+    if (!fs.existsSync(directory)) return [];
+    return fs.readdirSync(directory)
+      .filter(fileName => fileName.endsWith('.md'))
+      .map(fileName => parseLocalItem(
+        fileName,
+        'post',
+        fs.readFileSync(path.join(process.cwd(), 'posts', fileName), 'utf8'),
+      ));
   } catch (error) {
-    console.error(`读取 ${directoryName} 失败:`, error);
+    console.error('读取 posts 失败:', error);
+    return [];
   }
-  return items;
+}
+
+function getChatterItems() {
+  const directory = path.join(process.cwd(), 'chatters');
+  try {
+    if (!fs.existsSync(directory)) return [];
+    return fs.readdirSync(directory)
+      .filter(fileName => fileName.endsWith('.md'))
+      .map(fileName => parseLocalItem(
+        fileName,
+        'chatter',
+        fs.readFileSync(path.join(process.cwd(), 'chatters', fileName), 'utf8'),
+      ));
+  } catch (error) {
+    console.error('读取 chatters 失败:', error);
+    return [];
+  }
+}
+
+function getMomentItems() {
+  const directory = path.join(process.cwd(), 'moments');
+  try {
+    if (!fs.existsSync(directory)) return [];
+    return fs.readdirSync(directory)
+      .filter(fileName => fileName.endsWith('.md'))
+      .map(fileName => parseLocalItem(
+        fileName,
+        'moment',
+        fs.readFileSync(path.join(process.cwd(), 'moments', fileName), 'utf8'),
+      ));
+  } catch (error) {
+    console.error('读取 moments 失败:', error);
+    return [];
+  }
 }
 
 export default function CreativeWorkshopPage() {
-  const posts = getLocalItems('posts', 'post');
-  const chatters = getLocalItems('chatters', 'chatter');
-  const moments = getLocalItems('moments', 'moment');
+  const posts = getPostItems();
+  const chatters = getChatterItems();
+  const moments = getMomentItems();
 
   return (
     <CreativeWorkshopClient

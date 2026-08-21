@@ -74,7 +74,7 @@ const formatDisplayDate = (dateStr: string) => {
 // 🌟 2. 特效组件
 // ==========================================
 const BlinkingPoints = ({ geometry, color, size, opacity }: any) => {
-  const materialRef = useRef<any>();
+  const materialRef = useRef<any>(null);
   useMemo(() => {
     if (!geometry.hasAttribute('aPhase')) {
       const count = geometry.attributes.position.count;
@@ -865,13 +865,13 @@ export default function DijiangModel({ posts = [], chatters = [], moments = [] }
       </div>
 
       {/* 🌟 底座：留言板 */}
-      <div className="w-full max-w-4xl mx-auto mt-10 mb-16 px-4 relative z-0">
+      {siteConfig.features.comments && <div className="w-full max-w-4xl mx-auto mt-10 mb-16 px-4 relative z-0">
          <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2 font-serif text-center uppercase tracking-[0.2em] border-b border-slate-300 dark:border-[#333] pb-4 flex flex-col items-center gap-2">
             <span className="text-[10px] text-slate-500 font-mono">ENDFIELD RECEPTION CENTER</span>
             「 {formattedMonth} 的通讯接收枢纽 」
          </h2>
          <LabComments key={`gitalk-${currentMonthStr}`} pageId={`workshop-${currentMonthStr}`} />
-      </div>
+      </div>}
 
     </motion.div>
   );

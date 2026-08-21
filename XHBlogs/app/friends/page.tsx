@@ -4,7 +4,7 @@ import FriendsBoard from './FriendsBoard';
 import {siteConfig} from "@/siteConfig";
 
 export const metadata = {
-  title: "友链 | " + siteConfig.title,
+  title: "友链",
   description: "赛博空间里的有趣灵魂",
 };
 

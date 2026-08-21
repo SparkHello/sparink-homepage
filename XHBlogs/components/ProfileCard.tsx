@@ -2,16 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { siteConfig } from '../siteConfig';
-import { useToast } from './ToastProvider';
 
 export default function ProfileCard({ postCount, chatterCount, photoCount }: { postCount: number, chatterCount: number, photoCount: number }) {
   const router = useRouter();
-  const { showToast } = useToast();
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    showToast(`✨ ${label}已复制到剪贴板: ${text}`, 'success');
-  };
 
   return (
     <div
@@ -48,12 +41,8 @@ export default function ProfileCard({ postCount, chatterCount, photoCount }: { p
         </div>
 
         <div className="flex gap-2 md:gap-3 flex-wrap justify-center md:justify-end w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
-          <SocialBtn type="github" url={siteConfig.social?.github} />
-          <SocialBtn type="gitee" url={siteConfig.social?.gitee} />
-          <SocialBtn type="google" url={siteConfig.social?.google} />
-          <SocialBtn type="email" onClick={() => copyToClipboard(siteConfig.social?.email || '', '邮箱')} />
-          <SocialBtn type="qq" onClick={() => copyToClipboard(siteConfig.social?.qq || '', 'QQ号')} />
-          <SocialBtn type="wechat" onClick={() => copyToClipboard(siteConfig.social?.wechat || '', '微信号')} />
+          {siteConfig.social.github && <SocialBtn type="github" url={siteConfig.social.github} />}
+          {siteConfig.social.email && <SocialBtn type="email" url={`mailto:${siteConfig.social.email}`} />}
         </div>
       </div>
     </div>
@@ -91,5 +80,5 @@ function SocialBtn({ type, url, onClick }: { type: string, url?: string, onClick
       {getIcon()}
     </div>
   );
-  return url ? <a href={url} target="_blank" rel="noopener noreferrer">{content}</a> : content;
+  return url ? <a href={url} target={url.startsWith('mailto:') ? undefined : '_blank'} rel={url.startsWith('mailto:') ? undefined : 'noopener noreferrer'}>{content}</a> : content;
 }

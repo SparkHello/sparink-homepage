@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import matter from '../../../lib/frontmatter';
 import Link from 'next/link';
 
 import { unified } from 'unified';
@@ -260,9 +260,11 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
                 />
               </div>
 
-              <div className="mt-12 md:mt-16">
-                <Comments />
-              </div>
+              {siteConfig.features.comments && (
+                <div className="mt-12 md:mt-16">
+                  <Comments />
+                </div>
+              )}
 
             </div>
           </article>

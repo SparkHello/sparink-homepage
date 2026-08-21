@@ -43,7 +43,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
       <div className="mb-8 md:mb-14 text-center">
         {/* 🌟 核心修改：标题字号响应式 */}
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-2 md:mb-4 tracking-tighter">
-          {siteConfig.chatterTitle || "源石研究笔记"}
+          {siteConfig.chatterTitle || "灵感碎片"}
         </h1>
         <p className="text-xs md:text-base text-slate-500 dark:text-slate-400 font-medium italic opacity-80">
           “ {siteConfig.chatterDescription || "日常碎片与灵感记录"} ”
@@ -55,7 +55,7 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
           {/* 🌟 核心修改：搜索框在手机端更扁凑 */}
           <input
             type="text"
-            placeholder="搜寻被遗忘的思绪..."
+            placeholder="搜索灵感碎片…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl border border-white/40 dark:border-white/5 rounded-xl md:rounded-2xl px-4 md:px-6 py-3 md:py-4 pl-10 md:pl-14 text-sm md:text-base text-slate-800 dark:text-white shadow-lg md:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-400 font-medium"
@@ -152,6 +152,13 @@ export default function ChatterBoard({ chatters }: { chatters: Chatter[] }) {
           ))}
         </AnimatePresence>
       </motion.div>
+
+      {filteredChatters.length === 0 && (
+        <div className="rounded-[28px] bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl px-6 py-14 text-center text-slate-500 dark:text-slate-400">
+          <div className="text-4xl mb-4" aria-hidden="true">💭</div>
+          <p className="font-bold">{chatters.length === 0 ? "第一条灵感还在路上。" : "没有找到匹配的内容。"}</p>
+        </div>
+      )}
     </div>
   );
 }
