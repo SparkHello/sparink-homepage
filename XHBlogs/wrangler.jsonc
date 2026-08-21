@@ -2,8 +2,19 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "sparink-homepage",
   "main": ".open-next/worker.js",
+  "workers_dev": false,
   "compatibility_date": "2026-08-21",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "sparink.net",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.sparink.net",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
