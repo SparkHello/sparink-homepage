@@ -24,7 +24,7 @@ export default function ProfileCard({ postCount, chatterCount, photoCount }: { p
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1 md:mb-2 pb-1 leading-snug tracking-wider transition-colors duration-700 truncate">
               {siteConfig.authorName}
             </h1>
-            <p className="text-xs sm:text-sm md:text-base text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-md transition-colors duration-700 line-clamp-2 md:line-clamp-none">
+            <p className="text-xs sm:text-sm md:text-base text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-md transition-colors duration-700 line-clamp-4 sm:line-clamp-3 md:line-clamp-none">
               {siteConfig.bio}
             </p>
           </div>
