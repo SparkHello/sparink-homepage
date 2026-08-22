@@ -7,9 +7,10 @@ import {
   readFile,
   readdir,
   rename,
+  stat,
   writeFile,
 } from 'node:fs/promises'
-import { dirname, extname, join, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import sharp from 'sharp'
@@ -35,8 +36,11 @@ const CONTENT_DIRECTORIES = {
 const ALBUMS_FILE = join(PROJECT_DIR, 'data', 'albums.json')
 const MUSIC_FILE = join(PROJECT_DIR, 'data', 'music.json')
 const SETTINGS_FILE = join(PROJECT_DIR, 'data', 'content-settings.json')
-const UPLOADS_DIR = join(PROJECT_DIR, 'public', 'uploads')
+const PUBLIC_DIR = join(PROJECT_DIR, 'public')
+const UPLOADS_DIR = join(PUBLIC_DIR, 'uploads')
 const TRASH_DIR = join(PROJECT_DIR, '.content-studio', 'trash')
+const REFERENCE_SOURCE_EXTENSIONS = new Set(['.css', '.html', '.js', '.jsx', '.json', '.md', '.mdx', '.scss', '.ts', '.tsx', '.yaml', '.yml'])
+const REFERENCE_SCAN_IGNORED_DIRECTORIES = new Set(['.content-studio', 'node_modules'])
 
 const PUBLISH_PATHS = [
   'XHBlogs/posts',
@@ -176,6 +180,113 @@ async function writeJsonAtomic(pathname, value) {
   const temporary = `${pathname}.${randomUUID()}.tmp`
   await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
   await rename(temporary, pathname)
+}
+
+async function listFilesRecursively(directory, options = {}) {
+  let entries
+  try {
+    entries = await readdir(directory, { withFileTypes: true })
+  } catch (error) {
+    if (error?.code === 'ENOENT') return []
+    throw error
+  }
+
+  const files = []
+  for (const entry of entries) {
+    const pathname = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      if (options.skipDirectory?.(pathname, entry.name)) continue
+      files.push(...await listFilesRecursively(pathname, options))
+    } else if (entry.isFile() && (!options.includeFile || options.includeFile(pathname, entry.name))) {
+      files.push(pathname)
+    }
+  }
+  return files
+}
+
+function publicUrlForFile(pathname) {
+  return `/${relative(PUBLIC_DIR, pathname).split('\\').join('/')}`
+}
+
+async function collectReferencedUploadUrls() {
+  const sourceFiles = await listFilesRecursively(PROJECT_DIR, {
+    skipDirectory: (pathname, name) => pathname === UPLOADS_DIR || REFERENCE_SCAN_IGNORED_DIRECTORIES.has(name) || name.startsWith('.next'),
+    includeFile: (pathname) => REFERENCE_SOURCE_EXTENSIONS.has(extname(pathname).toLowerCase()),
+  })
+  const references = new Set()
+  const pattern = /\/uploads\/[^\s"'`<>{}\[\]()]+/g
+
+  for (const pathname of sourceFiles) {
+    const source = await readFile(pathname, 'utf8')
+    for (const match of source.matchAll(pattern)) {
+      const withoutQuery = match[0].split(/[?#]/, 1)[0]
+      try {
+        references.add(decodeURI(withoutQuery))
+      } catch {
+        references.add(withoutQuery)
+      }
+    }
+  }
+  return references
+}
+
+async function scanUnreferencedUploads() {
+  const [uploadFiles, references] = await Promise.all([
+    listFilesRecursively(UPLOADS_DIR),
+    collectReferencedUploadUrls(),
+  ])
+  const files = []
+
+  for (const pathname of uploadFiles) {
+    const relativePath = relative(UPLOADS_DIR, pathname).split('\\').join('/')
+    if (relativePath.split('/').some((part) => part.startsWith('.'))) continue
+    const url = publicUrlForFile(pathname)
+    if (references.has(url)) continue
+    const metadata = await stat(pathname)
+    files.push({ url, pathname, bytes: metadata.size })
+  }
+
+  files.sort((left, right) => left.url.localeCompare(right.url, 'zh-CN'))
+  return {
+    files,
+    count: files.length,
+    totalBytes: files.reduce((sum, file) => sum + file.bytes, 0),
+  }
+}
+
+async function trashUnreferencedUploads(value) {
+  const requestedUrls = Array.isArray(value?.urls)
+    ? [...new Set(value.urls.map((url) => String(url || '').trim()).filter(Boolean))]
+    : []
+  if (!requestedUrls.length || requestedUrls.length > 2000) {
+    throw Object.assign(new Error('请选择需要清理的未引用图片'), { statusCode: 400 })
+  }
+
+  const current = await scanUnreferencedUploads()
+  const currentByUrl = new Map(current.files.map((file) => [file.url, file]))
+  const selected = requestedUrls.map((url) => currentByUrl.get(url)).filter(Boolean)
+  if (!selected.length) {
+    throw Object.assign(new Error('这些图片已被引用或已不在上传目录，请重新扫描'), { statusCode: 409 })
+  }
+
+  const batchId = `${Date.now()}-${randomUUID().slice(0, 8)}`
+  const batchDirectory = join(TRASH_DIR, 'uploads', batchId)
+  const moved = []
+  for (const file of selected) {
+    const relativePath = relative(UPLOADS_DIR, file.pathname)
+    const destination = join(batchDirectory, relativePath)
+    await mkdir(dirname(destination), { recursive: true })
+    await rename(file.pathname, destination)
+    moved.push({ url: file.url, bytes: file.bytes })
+  }
+
+  return {
+    moved,
+    count: moved.length,
+    totalBytes: moved.reduce((sum, file) => sum + file.bytes, 0),
+    skipped: requestedUrls.length - moved.length,
+    trashPath: `.content-studio/trash/uploads/${batchId}`,
+  }
 }
 
 async function listContent(kind) {
@@ -482,6 +593,15 @@ const server = createServer(async (request, response) => {
       sendJson(response, 200, { ready: await previewIsReady(), url: SITE_PREVIEW_URL })
       return
     }
+    if (request.method === 'GET' && requestUrl.pathname === '/api/uploads/orphans') {
+      const result = await scanUnreferencedUploads()
+      sendJson(response, 200, {
+        count: result.count,
+        totalBytes: result.totalBytes,
+        files: result.files.map(({ url, bytes }) => ({ url, bytes })),
+      })
+      return
+    }
     if (request.method === 'GET' && requestUrl.pathname.startsWith('/api/jobs/')) {
       const job = jobs.get(requestUrl.pathname.split('/').pop())
       if (!job) throw Object.assign(new Error('任务不存在'), { statusCode: 404 })
@@ -500,6 +620,10 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'POST' && requestUrl.pathname === '/api/upload') {
       sendJson(response, 201, await uploadImage(request, requestUrl))
+      return
+    }
+    if (request.method === 'POST' && requestUrl.pathname === '/api/uploads/orphans/trash') {
+      sendJson(response, 200, await trashUnreferencedUploads(await readJson(request)))
       return
     }
 

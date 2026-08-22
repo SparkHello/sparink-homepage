@@ -119,6 +119,18 @@
             <div class="form-actions"><span class="form-hint">删除相册不会立即删除图片文件，避免误删复用素材。</span><button class="button primary" type="submit">保存相册</button></div>
           </form>
         </div>
+        <article class="panel asset-cleanup">
+          <div class="section-head">
+            <div><p class="eyebrow">UPLOAD HYGIENE</p><h2>未引用图片</h2></div>
+            <div class="asset-cleanup-actions">
+              <span id="orphan-summary" class="status-pill muted">尚未扫描</span>
+              <button id="scan-orphans" type="button" class="button ghost">重新扫描</button>
+              <button id="trash-orphans" type="button" class="button danger" disabled>移到废纸篓</button>
+            </div>
+          </div>
+          <p class="lead">扫描文章封面、Markdown 正文、动态和全部相册，只列出没有任何内容引用的上传图片。清理后文件仍可从 <code>.content-studio/trash</code> 恢复；下次发布才会把删除同步到线上。</p>
+          <div id="orphan-list" class="orphan-list"><div class="record-empty">进入本页后会自动扫描</div></div>
+        </article>
       </section>
 
       <section class="view" data-view-panel="music">

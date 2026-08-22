@@ -8,6 +8,8 @@ const app = {
   momentImages: [],
   albumPhotos: [],
   activeAlbum: -1,
+  orphanUploads: null,
+  orphanScanRunning: false,
   publishTimer: null,
 }
 
@@ -50,6 +52,7 @@ function setView(name) {
   const titles = { overview: '内容概览', writing: '文章与日记', moments: '动态', albums: '照片与相册', music: '音乐', publish: '检查与发布' }
   $('#page-title').textContent = titles[name]
   if (name === 'publish') loadState().catch(handleError)
+  if (name === 'albums') scanOrphanUploads(false).catch(handleError)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -59,6 +62,7 @@ function renderAll() {
   renderWritingList()
   renderMomentList()
   renderAlbumList()
+  renderOrphanUploads()
   renderMusic()
   renderChanges()
 }
@@ -199,6 +203,7 @@ async function uploadFiles(files, scope) {
     urls.push(result.url)
   }
   $('#save-indicator').textContent = '图片处理完成'
+  invalidateOrphanUploads()
   return urls
 }
 
@@ -225,6 +230,74 @@ function renderAlbumPhotos() {
   $('#album-photos').innerHTML = app.albumPhotos.length ? app.albumPhotos.map((photo, index) => `<article class="photo-card">${cover === photo.url ? '<span class="cover-badge">封面</span>' : ''}<img src="${escapeHtml(assetUrl(photo.url))}" alt="照片 ${index + 1}"><input data-photo-caption="${index}" value="${escapeHtml(photo.caption || '')}" placeholder="照片说明"><div class="image-actions"><button type="button" data-set-cover="${index}">设封面</button><button type="button" data-image-action="up" data-kind="album" data-index="${index}">↑</button><button type="button" data-image-action="down" data-kind="album" data-index="${index}">↓</button><button type="button" data-image-action="remove" data-kind="album" data-index="${index}">移除</button></div></article>`).join('') : '<div class="record-empty">导入照片后会显示在这里</div>'
 }
 
+function formatBytes(bytes) {
+  const value = Number(bytes) || 0
+  if (value < 1024) return `${value} B`
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
+  return `${(value / 1024 / 1024).toFixed(1)} MB`
+}
+
+function renderOrphanUploads() {
+  const list = $('#orphan-list')
+  const summary = $('#orphan-summary')
+  const trashButton = $('#trash-orphans')
+  if (!list || !summary || !trashButton) return
+  if (app.orphanScanRunning) {
+    summary.textContent = '正在扫描…'
+    list.innerHTML = '<div class="record-empty">正在核对全部内容引用</div>'
+    trashButton.disabled = true
+    return
+  }
+  if (!app.orphanUploads) {
+    summary.textContent = '尚未扫描'
+    list.innerHTML = '<div class="record-empty">点击“重新扫描”检查上传目录</div>'
+    trashButton.disabled = true
+    return
+  }
+  const { files, count, totalBytes } = app.orphanUploads
+  summary.textContent = count ? `${count} 张 · ${formatBytes(totalBytes)}` : '没有冗余图片'
+  trashButton.disabled = count === 0
+  list.innerHTML = count
+    ? files.map((file) => `<article class="orphan-row"><img src="${escapeHtml(assetUrl(file.url))}" alt=""><div><strong title="${escapeHtml(file.url)}">${escapeHtml(file.url)}</strong><span>没有被文章、动态或相册引用</span></div><b>${formatBytes(file.bytes)}</b></article>`).join('')
+    : '<div class="record-empty">上传目录很干净，所有图片都仍在使用</div>'
+}
+
+function invalidateOrphanUploads() {
+  app.orphanUploads = null
+  renderOrphanUploads()
+}
+
+async function scanOrphanUploads(showToast = true) {
+  if (app.orphanScanRunning) return
+  app.orphanScanRunning = true
+  $('#scan-orphans').disabled = true
+  renderOrphanUploads()
+  try {
+    app.orphanUploads = await api('/api/uploads/orphans')
+    if (showToast) toast(app.orphanUploads.count ? `发现 ${app.orphanUploads.count} 张未引用图片` : '没有发现未引用图片')
+  } finally {
+    app.orphanScanRunning = false
+    $('#scan-orphans').disabled = false
+    renderOrphanUploads()
+  }
+}
+
+async function trashOrphanUploads() {
+  if (!app.orphanUploads?.count) return
+  const { files, count, totalBytes } = app.orphanUploads
+  if (!confirm(`确认把 ${count} 张未引用图片（${formatBytes(totalBytes)}）移到本地废纸篓？\n\n文件不会立即永久删除；下次发布后，线上对应路径才会移除。`)) return
+  $('#trash-orphans').disabled = true
+  const result = await api('/api/uploads/orphans/trash', {
+    method: 'POST',
+    mutate: true,
+    json: { urls: files.map((file) => file.url) },
+  })
+  app.orphanUploads = null
+  await loadState()
+  await scanOrphanUploads(false)
+  toast(`已移动 ${result.count} 张图片到本地废纸篓`)
+}
+
 function syncAlbumCaptions() {
   $$('[data-photo-caption]').forEach((input) => {
     const photo = app.albumPhotos[Number(input.dataset.photoCaption)]
@@ -238,7 +311,7 @@ async function saveAlbum(event) {
   const next = [...app.data.albums]
   if (app.activeAlbum >= 0) next[app.activeAlbum] = album; else next.unshift(album)
   const result = await api('/api/albums', { method: 'PUT', mutate: true, json: next }); app.data.albums = result.albums
-  app.activeAlbum = app.data.albums.findIndex((item) => item.id === album.id); renderAll(); editAlbum(app.activeAlbum); toast('相册已保存到本地')
+  app.activeAlbum = app.data.albums.findIndex((item) => item.id === album.id); invalidateOrphanUploads(); renderAll(); editAlbum(app.activeAlbum); toast('相册已保存到本地')
 }
 
 async function deleteAlbum() {
@@ -246,7 +319,7 @@ async function deleteAlbum() {
   const album = app.data.albums[app.activeAlbum]
   if (!confirm(`删除相册「${album.title}」？图片文件会保留。`)) return
   const next = app.data.albums.filter((_, index) => index !== app.activeAlbum)
-  const result = await api('/api/albums', { method: 'PUT', mutate: true, json: next }); app.data.albums = result.albums; resetAlbum(); renderAll(); toast('相册已删除，图片文件仍保留')
+  const result = await api('/api/albums', { method: 'PUT', mutate: true, json: next }); app.data.albums = result.albums; invalidateOrphanUploads(); resetAlbum(); renderAll(); toast('相册已删除，图片文件仍保留，可在下方检查清理')
 }
 
 function moveImage(kind, index, action) {
@@ -362,6 +435,7 @@ function bindEvents() {
   $('#new-album').addEventListener('click', resetAlbum); $('#album-list').addEventListener('click', (event) => { const button = event.target.closest('[data-album-index]'); if (button) editAlbum(Number(button.dataset.albumIndex)) })
   $('#album-form').addEventListener('submit', (event) => saveAlbum(event).catch(handleError)); $('#delete-album').addEventListener('click', () => deleteAlbum().catch(handleError)); $('#album-form').elements.cover.addEventListener('input', renderAlbumPhotos)
   $('#album-photos-upload').addEventListener('change', async (event) => { try { app.albumPhotos.push(...(await uploadFiles([...event.target.files], 'photos')).map((url) => ({ url, caption: '' }))); renderAlbumPhotos(); toast('照片已导入并压缩') } catch (error) { handleError(error) } finally { event.target.value = '' } })
+  $('#scan-orphans').addEventListener('click', () => scanOrphanUploads().catch(handleError)); $('#trash-orphans').addEventListener('click', () => trashOrphanUploads().catch(handleError))
   document.addEventListener('click', (event) => {
     const imageButton = event.target.closest('[data-image-action]'); if (imageButton) moveImage(imageButton.dataset.kind, Number(imageButton.dataset.index), imageButton.dataset.imageAction)
     const coverButton = event.target.closest('[data-set-cover]'); if (coverButton) { syncAlbumCaptions(); $('#album-form').elements.cover.value = app.albumPhotos[Number(coverButton.dataset.setCover)].url; renderAlbumPhotos() }
