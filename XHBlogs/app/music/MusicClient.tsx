@@ -10,7 +10,7 @@ import { useMusic } from '../../components/MusicProvider';
 export default function MusicClient() {
   const {
     playlist, currentSong, isPlaying, progress, currentTime, duration, currentLyric,
-    isLoading, togglePlay, nextSong, prevSong, handleSeek,
+    isLoading, loadError, retryMusic, togglePlay, nextSong, prevSong, handleSeek,
     playSong,
     playMode, togglePlayMode,
     volume, setVolume, isMuted, toggleMute
@@ -113,13 +113,38 @@ export default function MusicClient() {
     );
   }, [playlist, searchQuery]);
 
-  if (isLoading || !currentSong) {
+  if (isLoading) {
     return (
       <div className="min-h-screen relative pb-32 flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center animate-pulse gap-4">
           <Disc3 size={48} className="text-indigo-500 animate-spin" />
           <span className="font-black text-slate-500 tracking-widest text-sm">唤醒音频引擎中...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentSong) {
+    return (
+      <div className="min-h-screen relative pb-32 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+            <Disc3 size={34} className="text-indigo-500" />
+          </div>
+          <div>
+            <h1 className="font-black text-slate-800 dark:text-white tracking-widest text-lg mb-2">音频引擎暂时休眠</h1>
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{loadError || '歌单暂时无法读取'}</p>
+          </div>
+          <button
+            type="button"
+            onClick={retryMusic}
+            className="inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-indigo-500/25 transition-transform hover:scale-105 active:scale-95"
+          >
+            <RefreshCcw size={16} />
+            重新连接
+          </button>
         </div>
       </div>
     );

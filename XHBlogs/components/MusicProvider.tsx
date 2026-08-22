@@ -46,6 +46,7 @@ interface MusicContextType {
   duration: number;
   currentLyric: string;
   isLoading: boolean;
+  loadError: string;
   volume: number;
   isMuted: boolean;
   playMode: PlayMode;
@@ -58,9 +59,11 @@ interface MusicContextType {
   setVolume: (value: number) => void;
   toggleMute: () => void;
   togglePlayMode: () => void;
+  retryMusic: () => void;
 }
 
 const MusicContext = createContext<MusicContextType | null>(null);
+const MUSIC_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<any[]>([]);
@@ -72,6 +75,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [lyrics, setLyrics] = useState<{ time: number; text: string }[]>([]);
   const [currentLyric, setCurrentLyric] = useState("正在连接高可用神经云端...");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
 
   // 🌟 2. 新增音量和播放模式状态
   const [volume, setVolumeState] = useState(1);
@@ -83,9 +88,47 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     const fetchMusicData = async () => {
+      const songIds = siteConfig.cloudMusicIds || [];
+      const cacheKey = `sparink-music-v2:${songIds.join(',')}`;
+      setIsLoading(true);
+      setLoadError("");
+
       try {
-        const res = await fetch(`/api/music?ids=${siteConfig.cloudMusicIds.join(',')}`);
-        const rawResults = await res.json();
+        let rawResults: any[] | null = null;
+
+        if (retryKey === 0) {
+          try {
+            const cached = window.localStorage.getItem(cacheKey);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (
+                Array.isArray(parsed?.songs) &&
+                Date.now() - Number(parsed.cachedAt) < MUSIC_CACHE_TTL_MS
+              ) {
+                rawResults = parsed.songs;
+              }
+            }
+          } catch {
+            window.localStorage.removeItem(cacheKey);
+          }
+        }
+
+        if (!rawResults) {
+          const res = await fetch(`/api/music?ids=${songIds.join(',')}`, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(12000),
+          });
+          if (!res.ok) throw new Error(`音乐接口返回 ${res.status}`);
+          rawResults = await res.json();
+          if (!Array.isArray(rawResults)) throw new Error("音乐接口数据格式异常");
+
+          if (rawResults.some((song: any) => song?.url && !song.error)) {
+            window.localStorage.setItem(
+              cacheKey,
+              JSON.stringify({ cachedAt: Date.now(), songs: rawResults }),
+            );
+          }
+        }
 
         const mergedPlaylist = rawResults
           .filter((song: any) => song && song.url && !song.error)
@@ -95,17 +138,32 @@ export function MusicProvider({ children }: { children: ReactNode }) {
             artist: song.artist || song.author || '未知歌手',
             cover: song.cover || song.pic || 'https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg',
             src: song.url,
-            lrcUrl: null,
+            lrcUrl: song.lrc ? null : `/api/music?lyricId=${song.id}`,
             lyrics: song.lrc ? parseLrc(song.lrc) : []
           }));
 
         if (isMounted) {
-          if (mergedPlaylist.length > 0) setPlaylist(mergedPlaylist);
-          else setCurrentLyric("云端链路受阻");
+          if (mergedPlaylist.length > 0) {
+            setPlaylist(mergedPlaylist);
+            setCurrentIndex((index) => Math.min(index, mergedPlaylist.length - 1));
+          } else {
+            const rateLimited = rawResults.some((song: any) => song?.error === 'rate_limited');
+            const message = rateLimited
+              ? "网易云暂时限流，请稍后重试"
+              : "当前歌单暂时无法读取";
+            setPlaylist([]);
+            setLoadError(message);
+            setCurrentLyric(message);
+          }
           setIsLoading(false);
         }
       } catch (error) {
-        if (isMounted) { setCurrentLyric("网络初始化失败"); setIsLoading(false); }
+        if (isMounted) {
+          setPlaylist([]);
+          setLoadError("音乐服务连接失败，请稍后重试");
+          setCurrentLyric("音乐服务连接失败，请稍后重试");
+          setIsLoading(false);
+        }
       }
     };
 
@@ -113,7 +171,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     else setIsLoading(false);
 
     return () => { isMounted = false; };
-  }, []);
+  }, [retryKey]);
 
   useEffect(() => {
     if (playlist.length === 0) return;
@@ -128,11 +186,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     } else if (currentSong.lrcUrl) {
       fetch(currentSong.lrcUrl)
-        .then(res => res.text())
+        .then(res => {
+          if (!res.ok) throw new Error(`歌词接口返回 ${res.status}`);
+          return res.text();
+        })
         .then(text => {
           if (isMounted) {
              const parsed = parseLrc(text);
              setLyrics(parsed);
+             setCurrentLyric(parsed[0]?.text || "♪ 纯享音乐 ♪");
              setPlaylist(prev => {
                 const newPlaylist = [...prev];
                 newPlaylist[currentIndex].lyrics = parsed;
@@ -239,14 +301,16 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const retryMusic = () => setRetryKey((value) => value + 1);
+
   const currentSong = playlist[currentIndex];
 
   return (
     <MusicContext.Provider value={{
-        playlist, currentIndex, currentSong, isPlaying, progress, currentTime, duration, currentLyric, isLoading,
+        playlist, currentIndex, currentSong, isPlaying, progress, currentTime, duration, currentLyric, isLoading, loadError,
         volume, isMuted, playMode, // 暴露新状态
         togglePlay, nextSong, prevSong, handleSeek,
-        playSong, setVolume, toggleMute, togglePlayMode // 暴露新方法
+        playSong, setVolume, toggleMute, togglePlayMode, retryMusic // 暴露新方法
     }}>
       {children}
       {currentSong && (
