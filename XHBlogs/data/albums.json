@@ -1,1 +1,63 @@
-[]
+[
+  {
+    "id": "travel-2026",
+    "title": "旅行",
+    "description": "",
+    "cover": "/uploads/photos/2026/08/1557e3a968dee8c0163d318ee1d8faaf-1-f5e4fa2e.webp",
+    "date": "2026-08-22",
+    "photos": [
+      {
+        "url": "/uploads/photos/2026/08/4f754b9001521d79f64d597662f6b9b0-694178d8.webp",
+        "caption": "长沙杜甫江阁"
+      },
+      {
+        "url": "/uploads/photos/2026/08/2352bef0dfcf11be174f705ed7042e14-fc06a091.webp",
+        "caption": "长沙杜甫江阁"
+      },
+      {
+        "url": "/uploads/photos/2026/08/2f86a56c4f253ee5c84bb56b9d750d38-6a6cd177.webp",
+        "caption": "路上的云"
+      },
+      {
+        "url": "/uploads/photos/2026/08/11de95198757d7faec0a08874812b9f2-41c3c2ad.webp",
+        "caption": "列车外的风景"
+      },
+      {
+        "url": "/uploads/photos/2026/08/827f4f4f8b0db1db95cf78e13214315a-1-8da5399b.webp",
+        "caption": "长沙的云"
+      },
+      {
+        "url": "/uploads/photos/2026/08/1370fe7f8f1cea9bdcd263759e611004-7a571482.webp",
+        "caption": "路上随手"
+      },
+      {
+        "url": "/uploads/photos/2026/08/1557e3a968dee8c0163d318ee1d8faaf-1-f5e4fa2e.webp",
+        "caption": "途中"
+      },
+      {
+        "url": "/uploads/photos/2026/08/a85b16b57cf943cb7f60fefb7a8e315a-6c22b507.webp",
+        "caption": ""
+      },
+      {
+        "url": "/uploads/photos/2026/08/b06119138848a920847ba77f6dcce70a-01f31451.webp",
+        "caption": "城际线"
+      },
+      {
+        "url": "/uploads/photos/2026/08/IMG_1673-35470d3f.webp",
+        "caption": "浙江大学"
+      },
+      {
+        "url": "/uploads/photos/2026/08/650F8596-4A96-4553-9B42-0551D6A798A7-5be4b914.webp",
+        "caption": "浙江大学"
+      },
+      {
+        "url": "/uploads/photos/2026/08/7A12CFFF-BD66-458A-8BD0-47BE04FCA523-21bcb699.webp",
+        "caption": "浙江大学"
+      },
+      {
+        "url": "/uploads/photos/2026/08/IMG_1716-baf9c291.webp",
+        "caption": "浙江大学"
+      }
+    ]
+  }
+]
