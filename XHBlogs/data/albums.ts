@@ -1,5 +1,7 @@
+import albumData from './albums.json';
+
 export interface Photo { url: string; caption?: string; }
 export interface Album { id: string; title: string; description: string; cover: string; date: string; photos: Photo[]; }
 
-// 个人相册以后从这里添加；暂不沿用模板作者的示例内容。
-export const albums: Album[] = [];
+// 由本地 Sparink Studio 维护；JSON 仍可直接审阅和版本控制。
+export const albums: Album[] = albumData;

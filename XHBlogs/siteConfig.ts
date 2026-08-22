@@ -1,5 +1,8 @@
 // 全站统一配置。个人信息和功能开关优先在这里修改。
 
+import contentSettings from './data/content-settings.json';
+import musicLibrary from './data/music.json';
+
 export const siteConfig = {
   title: "Sparink の 数字花园",
   siteUrl: "https://sparink.net",
@@ -24,7 +27,7 @@ export const siteConfig = {
   defaultPostCover: "https://bu.dusays.com/2026/03/24/69c1e38b346cb.jpg",
   photoWallImage: "https://bu.dusays.com/2026/03/24/69c1e38b4c370.jpg",
 
-  cloudMusicIds: ["1809646618", "3361076230", "1859390262"],
+  cloudMusicIds: musicLibrary.map((song) => song.id),
   social: {
     github: "https://github.com/SparkHello",
     gitee: "",
@@ -53,12 +56,12 @@ export const siteConfig = {
 
   // 内容尚未开放时，从导航和全局组件中隐藏；以后只需改为 true。
   features: {
-    moments: false,
-    chatter: false,
+    moments: contentSettings.moments,
+    chatter: contentSettings.chatter,
     friends: false,
     comments: false,
-    photoWall: true,
-    music: true,
+    photoWall: contentSettings.photoWall,
+    music: contentSettings.music,
     lab: true,
     desktopEffects: true,
     toolbox: true,

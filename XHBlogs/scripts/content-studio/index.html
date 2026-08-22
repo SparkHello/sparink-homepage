@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Sparink Studio</title>
+  <link rel="stylesheet" href="/studio.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div><strong>Sparink Studio</strong><span>LOCAL CONTENT DESK</span></div>
+      </div>
+      <nav class="nav" aria-label="控制台导航">
+        <button class="nav-item active" data-view="overview"><span>⌂</span>概览</button>
+        <button class="nav-item" data-view="writing"><span>✎</span>文章与日记</button>
+        <button class="nav-item" data-view="moments"><span>✦</span>动态</button>
+        <button class="nav-item" data-view="albums"><span>▧</span>照片与相册</button>
+        <button class="nav-item" data-view="music"><span>♫</span>音乐</button>
+        <button class="nav-item publish-nav" data-view="publish"><span>↑</span>检查与发布</button>
+      </nav>
+      <div class="local-note"><i></i><div><strong>仅本机运行</strong><span>不会部署到公开网站</span></div></div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div><p class="eyebrow">SPARINK / CONTENT</p><h1 id="page-title">内容概览</h1></div>
+        <div class="top-actions">
+          <span id="save-indicator" class="status-pill muted">数据已载入</span>
+          <button id="refresh-button" class="button ghost">刷新</button>
+          <button id="preview-button" class="button primary">打开网站预览 ↗</button>
+        </div>
+      </header>
+
+      <section class="view active" data-view-panel="overview">
+        <div class="hero-card">
+          <div><p class="eyebrow">A QUIET PLACE TO BUILD</p><h2>先在本地整理，满意后再推向云端。</h2><p>内容直接写入仓库，图片自动压缩为 WebP；发布前会完整构建并检查。</p></div>
+          <button class="button light" data-go="writing">开始写点什么</button>
+        </div>
+        <div id="stat-grid" class="stat-grid"></div>
+        <div class="overview-grid">
+          <article class="panel">
+            <div class="section-head"><div><p class="eyebrow">VISIBILITY</p><h2>网站栏目</h2></div><span>随内容一起发布</span></div>
+            <div id="feature-toggles" class="toggle-list"></div>
+          </article>
+          <article class="panel">
+            <div class="section-head"><div><p class="eyebrow">QUICK START</p><h2>快捷入口</h2></div></div>
+            <div class="quick-grid">
+              <button data-new="posts"><b>＋</b><span>新文章<small>长内容与技术记录</small></span></button>
+              <button data-new="chatters"><b>✦</b><span>新日记<small>随想、碎片与生活</small></span></button>
+              <button data-new="moments"><b>◎</b><span>发动态<small>图片与一句话</small></span></button>
+              <button data-go="albums"><b>▧</b><span>整理照片<small>创建相册与说明</small></span></button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="writing">
+        <div class="editor-layout">
+          <aside class="record-panel panel">
+            <div class="record-toolbar">
+              <div class="segmented"><button class="active" data-writing-kind="posts">文章</button><button data-writing-kind="chatters">日记 / 杂谈</button></div>
+              <button id="new-writing" class="icon-button" title="新建">＋</button>
+            </div>
+            <label class="search"><span>⌕</span><input id="writing-search" placeholder="搜索标题或标签"></label>
+            <div id="writing-list" class="record-list"></div>
+          </aside>
+          <form id="writing-form" class="panel editor-form">
+            <div class="section-head"><div><p class="eyebrow" id="writing-eyebrow">NEW POST</p><h2 id="writing-heading">新文章</h2></div><button id="delete-writing" type="button" class="button danger hidden">移到废纸篓</button></div>
+            <input type="hidden" name="originalSlug">
+            <div class="form-grid two"><label>标题<input name="title" required placeholder="给这篇内容一个标题"></label><label>文件标识<input name="slug" required placeholder="例如 agent-memory"></label></div>
+            <div class="form-grid two"><label>日期<input name="date" type="date"></label><label id="mood-field" class="hidden">心情<input name="mood" placeholder="平静 / 兴奋 / 忙碌"></label><label id="tags-field">标签<input name="tags" placeholder="AI, Agent, 随笔"></label></div>
+            <label>摘要<textarea name="description" rows="2" placeholder="列表页会显示这段简介"></textarea></label>
+            <div class="cover-field">
+              <label>封面地址<input name="cover" placeholder="上传图片，或粘贴 HTTPS 地址"></label>
+              <label class="upload-button">上传封面<input id="writing-cover-upload" type="file" accept="image/*,.heic,.heif" hidden></label>
+              <div id="writing-cover-preview" class="mini-preview empty">暂无封面</div>
+            </div>
+            <label class="content-field">正文（Markdown）<textarea name="content" rows="18" placeholder="# 从这里开始写……"></textarea></label>
+            <div class="form-actions"><span class="form-hint">保存后立即进入本地预览；不会自动推送。</span><button class="button primary" type="submit">保存到本地</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="moments">
+        <div class="editor-layout">
+          <aside class="record-panel panel">
+            <div class="record-toolbar"><div><p class="eyebrow">MOMENTS</p><strong>动态列表</strong></div><button id="new-moment" class="icon-button">＋</button></div>
+            <div id="moment-list" class="record-list"></div>
+          </aside>
+          <form id="moment-form" class="panel editor-form">
+            <div class="section-head"><div><p class="eyebrow">NEW MOMENT</p><h2 id="moment-heading">新动态</h2></div><button id="delete-moment" type="button" class="button danger hidden">移到废纸篓</button></div>
+            <input type="hidden" name="originalSlug">
+            <div class="form-grid two"><label>文件标识<input name="slug" required placeholder="例如 summer-night"></label><label>日期<input name="date" type="date"></label></div>
+            <label>地点<input name="location" placeholder="可留空"></label>
+            <label>正文（Markdown）<textarea name="content" rows="9" placeholder="今天发生了什么？"></textarea></label>
+            <div class="image-section"><div class="section-head compact"><div><strong>动态图片</strong><span>可多选，拖动排序暂用上下按钮</span></div><label class="upload-button">添加图片<input id="moment-images-upload" type="file" accept="image/*,.heic,.heif" multiple hidden></label></div><div id="moment-images" class="image-grid"></div></div>
+            <div class="form-actions"><span class="form-hint">图片会压缩到最长边 2560px。</span><button class="button primary" type="submit">保存动态</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="albums">
+        <div class="editor-layout">
+          <aside class="record-panel panel">
+            <div class="record-toolbar"><div><p class="eyebrow">PHOTO LIBRARY</p><strong>相册</strong></div><button id="new-album" class="icon-button">＋</button></div>
+            <div id="album-list" class="record-list"></div>
+          </aside>
+          <form id="album-form" class="panel editor-form">
+            <div class="section-head"><div><p class="eyebrow">ALBUM EDITOR</p><h2 id="album-heading">新相册</h2></div><button id="delete-album" type="button" class="button danger hidden">删除相册</button></div>
+            <input type="hidden" name="originalId">
+            <div class="form-grid two"><label>相册名<input name="title" required></label><label>相册标识<input name="id" required placeholder="例如 street-2026"></label></div>
+            <div class="form-grid two"><label>日期<input name="date" type="date"></label><label>封面地址<input name="cover" placeholder="默认使用第一张照片"></label></div>
+            <label>相册说明<textarea name="description" rows="2"></textarea></label>
+            <div class="image-section"><div class="section-head compact"><div><strong>照片</strong><span>可添加说明、设为封面和调整顺序</span></div><label class="upload-button">导入照片<input id="album-photos-upload" type="file" accept="image/*,.heic,.heif" multiple hidden></label></div><div id="album-photos" class="photo-editor-grid"></div></div>
+            <div class="form-actions"><span class="form-hint">删除相册不会立即删除图片文件，避免误删复用素材。</span><button class="button primary" type="submit">保存相册</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="music">
+        <div class="narrow-grid">
+          <article class="panel editor-form">
+            <div class="section-head"><div><p class="eyebrow">NETEASE CLOUD MUSIC</p><h2>网站歌单</h2></div><span id="music-count">0 首</span></div>
+            <p class="lead">输入网易云歌曲 ID，或直接粘贴包含 <code>id=</code> 的歌曲链接。这里只维护曲目顺序，网站仍通过现有接口读取歌曲信息。</p>
+            <div class="add-music"><input id="music-id" placeholder="歌曲 ID 或链接"><input id="music-label" placeholder="备注（可选）"><button id="add-music" class="button primary">添加</button></div>
+            <div id="music-list" class="sortable-list"></div>
+            <div class="form-actions"><span class="form-hint">会员或版权受限歌曲仍可能无法播放。</span><button id="save-music" class="button primary">保存歌单</button></div>
+          </article>
+          <aside class="panel tip-panel"><p class="eyebrow">HOW IT WORKS</p><h3>不用数据库，也不保存音频。</h3><p>歌单写入 <code>data/music.json</code>。本地预览会热更新；推送后 Cloudflare 重新构建网站。</p><div class="notice">公开网站的播放能力仍受网易云接口和歌曲版权限制。</div></aside>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="publish">
+        <div class="publish-grid">
+          <article class="panel editor-form">
+            <div class="section-head"><div><p class="eyebrow">PRE-FLIGHT</p><h2>检查与发布</h2></div><span id="branch-pill" class="status-pill">main</span></div>
+            <p class="lead">发布会先执行生产构建。通过后只提交文章、动态、相册、歌单、栏目开关和上传资源，再推送到 GitHub 的 <code>main</code>。</p>
+            <div id="change-summary" class="change-summary"></div>
+            <label>提交说明<input id="commit-message" value="content: update from Sparink Studio" maxlength="100"></label>
+            <div class="publish-actions"><button id="reload-changes" class="button ghost">重新检查</button><button id="publish-button" class="button primary large">构建并推送</button></div>
+          </article>
+          <article class="panel terminal-panel"><div class="terminal-head"><span></span><span></span><span></span><strong>发布日志</strong></div><pre id="publish-log">等待发布。这里会显示构建、提交与推送结果。</pre></article>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/studio.js"></script>
+</body>
+</html>
