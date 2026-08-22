@@ -83,7 +83,7 @@ export default function Home() {
   } catch (e) {}
   const top5Chatters = allChatters.length > 0 ? allChatters.slice(0, 5) : [{ slug: 'none', title: '一些想法正在路上', description: '短笔记与灵感碎片以后会出现在这里。', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
 
-  const chatterCount = allChatters.length;
+  const chatterCount = siteConfig.features.chatter ? allChatters.length : 0;
   const realPhotoCount = albums.reduce((total, album) => total + album.photos.length, 0);
   const latestAlbum = albums.length > 0 ? albums[0] : { id: '', title: '照片墙待更新', description: '摄影与生活记录以后会慢慢补上。', cover: siteConfig.photoWallImage, date: '' };
 
@@ -136,10 +136,12 @@ export default function Home() {
 
                   {/* 底层网格：说说轮播 + 主题切换器 */}
                   {/* 手机上单列，平板上分3列比例分布 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full flex-1">
-                    <div className="sm:col-span-2 flex flex-col min-h-[200px]">
-                      <LatestChatterCarousel chatters={top5Chatters} />
-                    </div>
+                  <div className={`grid grid-cols-1 gap-6 w-full flex-1 ${siteConfig.features.chatter ? 'sm:grid-cols-3' : 'sm:grid-cols-1'}`}>
+                    {siteConfig.features.chatter && (
+                      <div className="sm:col-span-2 flex flex-col min-h-[200px]">
+                        <LatestChatterCarousel chatters={top5Chatters} />
+                      </div>
+                    )}
                     <div className="sm:col-span-1 flex flex-col min-h-[120px]">
                       <ThemeToggleBlock />
                     </div>
