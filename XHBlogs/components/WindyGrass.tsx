@@ -4,17 +4,20 @@ import { useTheme } from './ThemeProvider';
 
 interface WildBlade { id: number; height: number; width: number; delay: number; duration: number; opacity: number; left: string; isLeftCurve: boolean; }
 
+// 每根草是 2 个常驻无限动画的节点，150 根 = 300 个图层
+const BLADE_COUNT = 60;
+
 export default function WindyGrass() {
   const [blades, setBlades] = useState<WildBlade[]>([]);
   // 订阅日夜状态
   const { isDark } = useTheme();
 
   useEffect(() => {
-    const generated: WildBlade[] = Array.from({ length: 150 }).map((_, i) => ({
+    const generated: WildBlade[] = Array.from({ length: BLADE_COUNT }).map((_, i) => ({
       id: i, height: 30 + Math.random() * 50, width: 1 + Math.random() * 2,
       delay: Math.random() * -10, duration: 3 + Math.random() * 4,
       opacity: 0.2 + Math.random() * 0.4,
-      left: `${(i / 150) * 100 + (Math.random() - 0.5) * 0.5}%`,
+      left: `${(i / BLADE_COUNT) * 100 + (Math.random() - 0.5) * 0.5}%`,
       isLeftCurve: Math.random() > 0.5
     }));
     setBlades(generated);

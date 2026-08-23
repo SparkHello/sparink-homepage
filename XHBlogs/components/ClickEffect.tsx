@@ -11,6 +11,7 @@ export default function ClickEffect() {
     if (!ctx) return;
 
     let ripples: any[] = [];
+    let frameId: number | null = null;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -62,6 +63,8 @@ export default function ClickEffect() {
 
     const handleClick = (e: MouseEvent) => {
       ripples.push(new Ripple(e.clientX, e.clientY));
+      // 只在有涟漪要画的时候才开循环，空转一整场会话是纯粹的浪费
+      if (frameId === null) frameId = requestAnimationFrame(animate);
     };
 
     window.addEventListener('click', handleClick);
@@ -81,11 +84,13 @@ export default function ClickEffect() {
           i--;
         }
       }
-      requestAnimationFrame(animate);
+
+      // 最后一个涟漪散完就停，等下一次点击再唤醒
+      frameId = ripples.length > 0 ? requestAnimationFrame(animate) : null;
     };
-    animate();
 
     return () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', resize);
       window.removeEventListener('click', handleClick);
     };

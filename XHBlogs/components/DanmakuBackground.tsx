@@ -45,7 +45,7 @@ export default function DanmakuBackground() {
           className="absolute whitespace-nowrap text-white/30 dark:text-white/10 font-bold text-lg tracking-wider select-none"
           style={{
             top: `${item.top}%`,
-            right: '-100%',
+            left: '100%',
             animation: `float-left ${item.duration}s linear ${item.delay}s infinite`,
           }}
         >
@@ -55,14 +55,13 @@ export default function DanmakuBackground() {
 
       <style dangerouslySetInnerHTML={{
         __html: `
+        /* 只动画 transform：动画 right 会让 15 条弹幕每帧触发一次重排 */
         @keyframes float-left {
           0% {
-            right: -100%;
-            transform: translateX(100%);
+            transform: translateX(0);
           }
           100% {
-            right: 100%;
-            transform: translateX(-100%);
+            transform: translateX(calc(-100vw - 100%));
           }
         }
       `}} />

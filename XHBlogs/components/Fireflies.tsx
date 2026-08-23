@@ -15,11 +15,14 @@ interface Firefly {
   floatPath: string;       // 随机分配飞行轨迹
 }
 
+// 密度够了就行：数量翻倍并不会更好看，但每一只都是一层每帧要合成的图层
+const FIREFLY_COUNT = 18;
+
 export default function Fireflies() {
   const [flies, setFlies] = useState<Firefly[]>([]);
 
   useEffect(() => {
-    const generated: Firefly[] = Array.from({ length: 50 }).map((_, i) => ({
+    const generated: Firefly[] = Array.from({ length: FIREFLY_COUNT }).map((_, i) => ({
       id: i,
       // 初始出生点
       top: `${Math.random() * 100}%`,
@@ -54,7 +57,6 @@ export default function Fireflies() {
           50% { 
             opacity: 1; 
             transform: scale(1.2); 
-            box-shadow: 0 0 10px 3px rgba(100, 255, 150, 0.8), 0 0 20px 6px rgba(50, 255, 100, 0.4);
           }
         }
 
@@ -100,6 +102,7 @@ export default function Fireflies() {
               width: `${fly.size}px`,
               height: `${fly.size}px`,
               backgroundColor: 'rgba(200, 255, 200, 0.9)',
+              boxShadow: '0 0 10px 3px rgba(100, 255, 150, 0.8), 0 0 20px 6px rgba(50, 255, 100, 0.4)',
               animation: `fireflyBreathe ${fly.breatheDuration}s ease-in-out infinite`,
               animationDelay: `${fly.breatheDelay}s`,
             }}
