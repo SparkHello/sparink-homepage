@@ -1,0 +1,8 @@
+# 上传资源与 Next.js 构建产物的文件名都带内容哈希，内容变了文件名就变，
+# 因此可以永久缓存。Workers Assets 的默认值是 max-age=0, must-revalidate，
+# 会让每次访问都为每张图重新发一次验证请求。
+/uploads/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

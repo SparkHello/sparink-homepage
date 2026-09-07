@@ -195,16 +195,17 @@ async function deleteMoment() {
   await api(`/api/content/moments/${encodeURIComponent(slug)}`, { method: 'DELETE', mutate: true }); await loadState(); resetMoment(); toast('动态已移到废纸篓')
 }
 
+// 返回完整的上传记录（url / thumb / width / height）；只要 URL 的调用方自己取 .url。
 async function uploadFiles(files, scope) {
-  const urls = []
+  const assets = []
   for (let index = 0; index < files.length; index += 1) {
     $('#save-indicator').textContent = `处理图片 ${index + 1}/${files.length}`
     const result = await api(`/api/upload?scope=${scope}`, { method: 'POST', mutate: true, headers: { 'X-File-Name': encodeURIComponent(files[index].name) }, body: files[index] })
-    urls.push(result.url)
+    assets.push(result)
   }
   $('#save-indicator').textContent = '图片处理完成'
   invalidateOrphanUploads()
-  return urls
+  return assets
 }
 
 function renderAlbumList() {
@@ -428,13 +429,13 @@ function bindEvents() {
   $('#writing-list').addEventListener('click', (event) => { const button = event.target.closest('[data-writing-slug]'); if (button) editWriting(button.dataset.writingSlug) })
   $('#writing-form').addEventListener('submit', (event) => saveWriting(event).catch(handleError)); $('#delete-writing').addEventListener('click', () => deleteWriting().catch(handleError))
   $('#writing-form').elements.cover.addEventListener('input', (event) => renderCoverPreview(event.target.value))
-  $('#writing-cover-upload').addEventListener('change', async (event) => { try { const [url] = await uploadFiles([...event.target.files], 'content'); $('#writing-form').elements.cover.value = url; renderCoverPreview(url); toast('封面已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })
+  $('#writing-cover-upload').addEventListener('change', async (event) => { try { const [asset] = await uploadFiles([...event.target.files], 'content'); $('#writing-form').elements.cover.value = asset.url; renderCoverPreview(asset.url); toast('封面已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })
   $('#new-moment').addEventListener('click', resetMoment); $('#moment-list').addEventListener('click', (event) => { const button = event.target.closest('[data-moment-slug]'); if (button) editMoment(button.dataset.momentSlug) })
   $('#moment-form').addEventListener('submit', (event) => saveMoment(event).catch(handleError)); $('#delete-moment').addEventListener('click', () => deleteMoment().catch(handleError))
-  $('#moment-images-upload').addEventListener('change', async (event) => { try { app.momentImages.push(...await uploadFiles([...event.target.files], 'content')); renderMomentImages(); toast('动态图片已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })
+  $('#moment-images-upload').addEventListener('change', async (event) => { try { app.momentImages.push(...(await uploadFiles([...event.target.files], 'content')).map((asset) => asset.url)); renderMomentImages(); toast('动态图片已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })
   $('#new-album').addEventListener('click', resetAlbum); $('#album-list').addEventListener('click', (event) => { const button = event.target.closest('[data-album-index]'); if (button) editAlbum(Number(button.dataset.albumIndex)) })
   $('#album-form').addEventListener('submit', (event) => saveAlbum(event).catch(handleError)); $('#delete-album').addEventListener('click', () => deleteAlbum().catch(handleError)); $('#album-form').elements.cover.addEventListener('input', renderAlbumPhotos)
-  $('#album-photos-upload').addEventListener('change', async (event) => { try { app.albumPhotos.push(...(await uploadFiles([...event.target.files], 'photos')).map((url) => ({ url, caption: '' }))); renderAlbumPhotos(); toast('照片已导入并压缩') } catch (error) { handleError(error) } finally { event.target.value = '' } })
+  $('#album-photos-upload').addEventListener('change', async (event) => { try { app.albumPhotos.push(...(await uploadFiles([...event.target.files], 'photos')).map(({ url, thumb, width, height }) => ({ url, thumb, width, height, caption: '' }))); renderAlbumPhotos(); toast('照片已导入并压缩') } catch (error) { handleError(error) } finally { event.target.value = '' } })
   $('#scan-orphans').addEventListener('click', () => scanOrphanUploads().catch(handleError)); $('#trash-orphans').addEventListener('click', () => trashOrphanUploads().catch(handleError))
   document.addEventListener('click', (event) => {
     const imageButton = event.target.closest('[data-image-action]'); if (imageButton) moveImage(imageButton.dataset.kind, Number(imageButton.dataset.index), imageButton.dataset.imageAction)

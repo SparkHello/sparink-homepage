@@ -133,6 +133,11 @@ function stringList(value, maximumItems = 30) {
   return list.map((item) => text(item, 100)).filter(Boolean).slice(0, maximumItems)
 }
 
+function pixelCount(value) {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 && number <= 100_000 ? number : 0
+}
+
 function safeUrl(value) {
   const url = text(value, 2048)
   if (!url) return ''
@@ -366,10 +371,15 @@ function validateAlbums(value) {
     const id = cleanSlug(album.id)
     if (ids.has(id)) throw Object.assign(new Error(`相册标识重复：${id}`), { statusCode: 400 })
     ids.add(id)
-    const photos = Array.isArray(album.photos) ? album.photos.slice(0, 500).map((photo) => ({
-      url: safeUrl(photo.url),
-      caption: text(photo.caption, 300),
-    })).filter((photo) => photo.url) : []
+    const photos = Array.isArray(album.photos) ? album.photos.slice(0, 500).map((photo) => {
+      const record = { url: safeUrl(photo.url), caption: text(photo.caption, 300) }
+      const thumb = safeUrl(photo.thumb)
+      if (thumb) record.thumb = thumb
+      const width = pixelCount(photo.width)
+      const height = pixelCount(photo.height)
+      if (width && height) Object.assign(record, { width, height })
+      return record
+    }).filter((photo) => photo.url) : []
     const cover = safeUrl(album.cover) || photos[0]?.url || ''
     return {
       id,
@@ -414,13 +424,17 @@ function validateSettings(value) {
   }
 }
 
-function encodeWebp(input, output) {
+function encodeWebp(input, output, { width, height, quality }) {
   return sharp(input, { failOn: 'error', limitInputPixels: 80_000_000 })
     .rotate()
-    .resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
-    .webp({ quality: 86, effort: 4 })
+    .resize({ width, height, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality, effort: 4 })
     .toFile(output)
 }
+
+const FULL_SIZE = { width: 2560, height: 2560, quality: 86 }
+// 相册网格里一列约 300 CSS px，700 px 宽足够覆盖 2x 屏；点开灯箱才加载全尺寸。
+const THUMB_SIZE = { width: 700, quality: 80 }
 
 // sharp 内置的 libheif 会拒绝 iPhone 的多瓦片 HEIC：整图被切成几十个 tile，
 // iref 引用数超过 16 的安全上限就报「文件头损坏」。macOS 上退回系统解码器再交给 sharp。
@@ -460,22 +474,33 @@ async function uploadImage(request, requestUrl) {
     .replaceAll(/[^\p{L}\p{N}_-]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 50) || 'image'
-  const filename = `${stem}-${randomUUID().slice(0, 8)}.webp`
-  const output = join(folder, filename)
+  const id = randomUUID().slice(0, 8)
+  const output = join(folder, `${stem}-${id}.webp`)
+  let source = buffer
   let info
   try {
-    info = await encodeWebp(buffer, output)
+    info = await encodeWebp(source, output, FULL_SIZE)
   } catch {
-    const decoded = await decodeWithSips(buffer, originalName)
-    if (!decoded) throw Object.assign(new Error('无法读取这张图片，请换用 JPG、PNG、WebP 或系统可识别的 HEIC'), { statusCode: 400 })
+    source = await decodeWithSips(buffer, originalName)
+    if (!source) throw Object.assign(new Error('无法读取这张图片，请换用 JPG、PNG、WebP 或系统可识别的 HEIC'), { statusCode: 400 })
     try {
-      info = await encodeWebp(decoded, output)
+      info = await encodeWebp(source, output, FULL_SIZE)
     } catch {
       throw Object.assign(new Error('无法读取这张图片，请换用 JPG、PNG、WebP 或系统可识别的 HEIC'), { statusCode: 400 })
     }
   }
-  const relative = output.slice(join(PROJECT_DIR, 'public').length).split('\\').join('/')
-  return { url: relative, width: info.width, height: info.height, bytes: info.size }
+  const asset = { url: publicUrlForFile(output), width: info.width, height: info.height, bytes: info.size }
+  // 相册照片额外产出缩略图；缩图失败不该让整次上传失败，网格退回全尺寸即可。
+  if (scope === 'photos' && info.width > THUMB_SIZE.width) {
+    const thumbOutput = join(folder, `${stem}-${id}-thumb.webp`)
+    try {
+      await encodeWebp(source, thumbOutput, THUMB_SIZE)
+      asset.thumb = publicUrlForFile(thumbOutput)
+    } catch {
+      await rm(thumbOutput, { force: true })
+    }
+  }
+  return asset
 }
 
 async function gitStatus() {
