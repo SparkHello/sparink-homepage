@@ -4,3 +4,6 @@
 # Local CMS runtime configuration
 my-blog-manager/data/deploy_config.json
 my-blog-manager/public/backend_config.json
+
+# Local editor / tooling configuration
+.claude/

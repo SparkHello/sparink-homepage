@@ -7,9 +7,11 @@ import {
   readFile,
   readdir,
   rename,
+  rm,
   stat,
   writeFile,
 } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -412,6 +414,33 @@ function validateSettings(value) {
   }
 }
 
+function encodeWebp(input, output) {
+  return sharp(input, { failOn: 'error', limitInputPixels: 80_000_000 })
+    .rotate()
+    .resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 86, effort: 4 })
+    .toFile(output)
+}
+
+// sharp 内置的 libheif 会拒绝 iPhone 的多瓦片 HEIC：整图被切成几十个 tile，
+// iref 引用数超过 16 的安全上限就报「文件头损坏」。macOS 上退回系统解码器再交给 sharp。
+async function decodeWithSips(buffer, originalName) {
+  if (process.platform !== 'darwin') return null
+  const base = join(tmpdir(), `content-studio-${randomUUID().slice(0, 8)}`)
+  const source = `${base}${extname(originalName) || '.heic'}`
+  const target = `${base}.png`
+  try {
+    await writeFile(source, buffer)
+    await execFileAsync('sips', ['-s', 'format', 'png', source, '--out', target])
+    return await readFile(target)
+  } catch {
+    return null
+  } finally {
+    await rm(source, { force: true })
+    await rm(target, { force: true })
+  }
+}
+
 async function uploadImage(request, requestUrl) {
   const originalName = decodeURIComponent(String(request.headers['x-file-name'] || 'image'))
   const buffer = await readBody(request, MAX_UPLOAD_BYTES)
@@ -435,13 +464,15 @@ async function uploadImage(request, requestUrl) {
   const output = join(folder, filename)
   let info
   try {
-    info = await sharp(buffer, { failOn: 'error', limitInputPixels: 80_000_000 })
-      .rotate()
-      .resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 86, effort: 4 })
-      .toFile(output)
+    info = await encodeWebp(buffer, output)
   } catch {
-    throw Object.assign(new Error('无法读取这张图片，请换用 JPG、PNG、WebP 或系统可识别的 HEIC'), { statusCode: 400 })
+    const decoded = await decodeWithSips(buffer, originalName)
+    if (!decoded) throw Object.assign(new Error('无法读取这张图片，请换用 JPG、PNG、WebP 或系统可识别的 HEIC'), { statusCode: 400 })
+    try {
+      info = await encodeWebp(decoded, output)
+    } catch {
+      throw Object.assign(new Error('无法读取这张图片，请换用 JPG、PNG、WebP 或系统可识别的 HEIC'), { statusCode: 400 })
+    }
   }
   const relative = output.slice(join(PROJECT_DIR, 'public').length).split('\\').join('/')
   return { url: relative, width: info.width, height: info.height, bytes: info.size }
