@@ -68,6 +68,8 @@ npm run preview
 
 确认无误后运行 `npm run deploy`，或让 Cloudflare Workers Builds 连接本仓库并自动部署。正式域名为 `sparink.net`。
 
+生产构建关闭 Turbopack 文件系统缓存，避免 Next.js 16.3 在云端恢复缓存时复用旧 CSS。每次发布使用 Git 提交 SHA 作为 deploymentId，保证导航和静态资源版本一致。
+
 ## License & Attribution
 
 本项目基于 [XingHuiSama/XinghuisamaBlogs](https://github.com/heiehiehi/XinghuisamaBlogs) 修改，并保留其原始许可证。
