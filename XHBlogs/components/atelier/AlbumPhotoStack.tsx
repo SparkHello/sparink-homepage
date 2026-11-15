@@ -1,18 +1,21 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { ViewTransition, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { Photo } from '../../data/albums';
 import styles from './AlbumPhotoStack.module.css';
+import { useAlbumNavigation } from './AlbumNavigation';
+import { albumPhotoName } from '../../lib/album-transition';
 
-type Props = { photos: Photo[]; title: string; variant?: 'first' | 'second' };
+type Props = { albumId: string; photos: Array<Photo & { originalIndex: number }>; title: string; variant?: 'first' | 'second' };
 type Drag = { pointerId: number; startX: number; startY: number; dx: number; dy: number; width: number; axis: 'pending' | 'horizontal' | 'vertical' };
 
-export default function AlbumPhotoStack({ photos, title, variant = 'first' }: Props) {
+export default function AlbumPhotoStack({ albumId, photos, title, variant = 'first' }: Props) {
   const items = photos.slice(0, 5);
   const count = items.length;
   const albumTitle = title.trim() || '相册';
-  const [active, setActive] = useState(0);
+  const { selected: remembered, remember } = useAlbumNavigation();
+  const [active, setActive] = useState(() => Math.max(0, items.findIndex(photo => photo.originalIndex === remembered[albumId])));
   const front = useRef<HTMLButtonElement>(null);
   const drag = useRef<Drag | null>(null);
   const busy = useRef(false);
@@ -21,7 +24,10 @@ export default function AlbumPhotoStack({ photos, title, variant = 'first' }: Pr
   const mounted = useRef(true);
   const instructionId = useId();
   const selected = count ? active % count : 0;
+  const originalIndex = items[selected]?.originalIndex;
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  useEffect(() => { if (originalIndex !== undefined) remember(albumId, originalIndex); }, [albumId, originalIndex, remember]);
 
   function rest() {
     const element = front.current;
@@ -128,7 +134,7 @@ export default function AlbumPhotoStack({ photos, title, variant = 'first' }: Pr
         if (event.detail > 0 && suppressClick.current) { suppressClick.current = false; return; }
         change(1);
       }}>
-        <img src={current.thumb || current.url} alt="" loading="lazy" draggable={false} onError={event => { if (event.currentTarget.getAttribute('src') !== current.url) event.currentTarget.src = current.url; }} />
+        <ViewTransition name={albumPhotoName(albumId, current.originalIndex)} share="album-photo" default="none"><img src={current.thumb || current.url} alt="" width={current.width} height={current.height} loading="lazy" draggable={false} onError={event => { if (event.currentTarget.getAttribute('src') !== current.url) event.currentTarget.src = current.url; }} /></ViewTransition>
       </button>
     </div>
     <div className={styles.toolbar}>

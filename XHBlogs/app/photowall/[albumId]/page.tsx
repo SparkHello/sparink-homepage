@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
+import { ViewTransition } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { albums } from '../../../data/albums';
 import AlbumGallery from '../../../components/atelier/AlbumGallery';
 import '../../../components/atelier/albums.css';
+import { albumTitleName } from '../../../lib/album-transition';
 
 type Props = { params: Promise<{ albumId: string }> };
 
@@ -32,10 +34,10 @@ export default async function AlbumPage({ params }: Props) {
   const date = /^(\d{4})-(\d{2})-(\d{2})/.exec(album.date);
   return (
     <main className="album-page album-detail-page">
-      <Link href="/photowall" className="album-back"><ArrowLeft size={15} />所有相册</Link>
-      <header className="album-detail-heading"><div><h1>{title}</h1>{album.description.trim() && <p>{album.description}</p>}</div>{date && <time dateTime={album.date}>{`${date[1]}.${date[2]}.${date[3]}`}</time>}</header>
+      <Link href="/photowall" transitionTypes={["album-close"]} className="album-back"><ArrowLeft size={15} />所有相册</Link>
+      <header className="album-detail-heading"><div><ViewTransition name={albumTitleName(album.id)} share="album-title" default="none"><h1>{title}</h1></ViewTransition>{album.description.trim() && <p>{album.description}</p>}</div>{date && <time dateTime={album.date}>{`${date[1]}.${date[2]}.${date[3]}`}</time>}</header>
       <AlbumGallery album={album} />
-      <div className="album-detail-end"><Link href="/photowall"><ArrowLeft size={15} />回到相册</Link></div>
+      <div className="album-detail-end"><Link href="/photowall" transitionTypes={["album-close"]}><ArrowLeft size={15} />回到相册</Link></div>
     </main>
   );
 }

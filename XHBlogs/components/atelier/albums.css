@@ -56,6 +56,9 @@
 .album-photo { break-inside: avoid; margin: 0 0 26px; }
 .album-photo-button { position: relative; display: block; width: 100%; padding: 0; border: 0; background: #e9e9e0; }
 .album-photo-button img { display: block; width: 100%; height: auto; }
+.album-photo-grid > .album-opening-photo { column-span: all; width: fit-content; max-width: min(100%, 940px); margin: 0 auto 42px; }
+.album-opening-photo .album-photo-button { width: fit-content; max-width: 100%; margin: auto; background: transparent; }
+.album-opening-photo .album-photo-button img { width: auto; max-width: 100%; height: auto; max-height: min(60svh, 650px); object-fit: contain; }
 .album-enlarge { position: absolute; right: 12px; bottom: 12px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--album-ink); background: #fffefbed; opacity: 0; transform: translate(-3px,3px); transition: opacity .2s, transform .2s; }
 .album-photo-button:hover .album-enlarge,
 .album-photo-button:focus-visible .album-enlarge { opacity: 1; transform: none; }
@@ -116,6 +119,7 @@
   .album-detail-heading time { display: block; margin: 12px 0 0; font-size: 9px; }
   .album-photo-grid { column-gap: 12px; }
   .album-photo { margin-bottom: 14px; }
+  .album-photo-grid > .album-opening-photo { margin-bottom: 28px; }
   .album-photo figcaption { font-size: 9px; margin-top: 7px; }
   .album-enlarge { width: 24px; height: 24px; right: 7px; bottom: 7px; }
   .album-enlarge svg { width: 14px; }

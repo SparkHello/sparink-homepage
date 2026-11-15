@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "../components/atelier/personal.css";
+import "../components/atelier/album-transitions.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { MusicProvider } from "../components/MusicProvider";
 import AtelierShell from "../components/atelier/AtelierShell";
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
+      data-scroll-behavior="smooth"
       className={`${sans.variable} ${mono.variable}`}
       suppressHydrationWarning
     >

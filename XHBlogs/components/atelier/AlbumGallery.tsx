@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { ViewTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, X } from 'lucide-react';
 import type { Album } from '../../data/albums';
+import { useAlbumNavigation } from './AlbumNavigation';
+import { albumPhotoName } from '../../lib/album-transition';
 
 export default function AlbumGallery({ album }: { album: Album }) {
   const title = album.title?.trim() || '相册';
+  const { selected: remembered } = useAlbumNavigation();
+  const coverIndex = Math.max(0, album.photos.findIndex(item => item.url === album.cover));
+  const leadingIndex = remembered[album.id] !== undefined && album.photos[remembered[album.id]] ? remembered[album.id] : coverIndex;
+  const displayPhotos = useMemo(() => album.photos.map((item, index) => ({ item, index })).sort((a, b) => Number(b.index === leadingIndex) - Number(a.index === leadingIndex)), [album.photos, leadingIndex]);
   const [selected, setSelected] = useState<number | null>(null);
   const [imageStates, setImageStates] = useState<Record<string, 'loaded' | 'error'>>({});
   const [retry, setRetry] = useState(0);
@@ -35,9 +41,9 @@ export default function AlbumGallery({ album }: { album: Album }) {
 
   if (!album.photos.length) return <div className="album-empty"><p>这一页先留着，等下一张照片。</p></div>;
   return <>
-    <div className="album-photo-grid">{album.photos.map((item, index) => <figure key={`${item.url}-${index}`} className="album-photo">
+    <div className="album-photo-grid">{displayPhotos.map(({ item, index }, displayIndex) => <figure key={`${item.url}-${index}`} className={`album-photo${displayIndex === 0 ? ' album-opening-photo' : ''}`}>
       <button type="button" className="album-photo-button" onClick={event => open(index, event.currentTarget)} aria-label={`查看${item.caption ? `「${item.caption}」` : `${title}的第 ${index + 1} 张照片`}原图`}>
-        <img src={item.thumb || item.url} alt={item.caption || `${title}，第 ${index + 1} 张`} width={item.width} height={item.height} loading={index < 3 ? 'eager' : 'lazy'} decoding="async" />
+        <ViewTransition name={albumPhotoName(album.id, index)} share="album-photo" default="none"><img src={item.thumb || item.url} alt={item.caption || `${title}，第 ${index + 1} 张`} width={item.width} height={item.height} loading={displayIndex < 3 ? 'eager' : 'lazy'} decoding="async" /></ViewTransition>
         <span className="album-enlarge" aria-hidden="true"><ArrowUpRight size={20} /></span>
       </button>
       {item.caption?.trim() && <figcaption>{item.caption}</figcaption>}

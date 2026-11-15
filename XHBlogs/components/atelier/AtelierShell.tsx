@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { siteConfig } from "../../siteConfig";
+import { AlbumNavigationProvider } from "./AlbumNavigation";
 
 const links = [
   { href: "/timeline", label: "日记" },
@@ -27,9 +28,9 @@ export default function AtelierShell({ children }: { children: React.ReactNode }
     : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <div className="personal-site">
+    <AlbumNavigationProvider><div className="personal-site">
       <a className="skip-link" href="#main-content">跳转到内容</a>
-      <header className="home-header">
+      <header className="home-header" style={{ viewTransitionName: "site-header" }}>
         <div className="personal-wrap home-header-inner">
           <Link className="home-brand" href="/" aria-label="Sparink 首页">
             <Mark /><span>sparink<span className="brand-period">.</span></span>
@@ -50,6 +51,6 @@ export default function AtelierShell({ children }: { children: React.ReactNode }
           </div>
         </div>
       </footer>
-    </div>
+    </div></AlbumNavigationProvider>
   );
 }

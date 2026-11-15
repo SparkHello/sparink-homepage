@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { ArrowRight } from "lucide-react";
 import HeroArt from "../components/atelier/HeroArt";
 import AlbumPhotoStack from "../components/atelier/AlbumPhotoStack";
@@ -6,6 +7,7 @@ import DiaryEntry from "../components/atelier/DiaryEntry";
 import { listDiaryEntries } from "../lib/diary";
 import { albums } from "../data/albums";
 import { siteConfig } from "../siteConfig";
+import { albumTitleName } from "../lib/album-transition";
 
 export default async function Home() {
   const entries = (await listDiaryEntries()).slice(0, 1);
@@ -44,11 +46,11 @@ export default async function Home() {
           <div className="home-album-pair">
             {recentAlbums.map((album, index) => {
               const first = album.photos.find((photo) => photo.url === album.cover) || album.photos[0];
-              const previewPhotos = [first, ...album.photos.filter((photo) => photo.url !== first.url)].slice(0, 5);
+              const previewPhotos = [first, ...album.photos.filter((photo) => photo.url !== first.url)].slice(0, 5).map(photo => ({ ...photo, originalIndex: album.photos.indexOf(photo) }));
               return (
                 <article className={`home-album home-album-${index}`} key={album.id}>
-                  <AlbumPhotoStack photos={previewPhotos} title={album.title} variant={index === 1 ? "second" : "first"} />
-                  <Link href={`/photowall/${encodeURIComponent(album.id)}`} className="home-album-caption"><h3>{album.title.trim() || "相册"}</h3><ArrowRight size={17} /></Link>
+                  <AlbumPhotoStack albumId={album.id} photos={previewPhotos} title={album.title} variant={index === 1 ? "second" : "first"} />
+                  <Link href={`/photowall/${encodeURIComponent(album.id)}`} transitionTypes={["album-open"]} className="home-album-caption"><ViewTransition name={albumTitleName(album.id)} share="album-title" default="none"><h3>{album.title.trim() || "相册"}</h3></ViewTransition><ArrowRight size={17} /></Link>
                   {album.description && <p>{album.description}</p>}
                 </article>
               );

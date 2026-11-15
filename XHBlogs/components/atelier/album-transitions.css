@@ -1,0 +1,35 @@
+/* Only shared photographs and their titles move; the navigation stays anchored. */
+::view-transition { pointer-events: none; }
+::view-transition-group(.album-photo) {
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(.22,.72,.22,1);
+  z-index: 2;
+}
+::view-transition-old(.album-photo),
+::view-transition-new(.album-photo) {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  mix-blend-mode: normal;
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(.22,.72,.22,1);
+}
+::view-transition-group(.album-title) {
+  animation-duration: 440ms;
+  animation-timing-function: cubic-bezier(.22,.72,.22,1);
+}
+::view-transition-old(.album-title),
+::view-transition-new(.album-title) { animation-duration: 260ms; }
+::view-transition-group(site-header) { animation: none; z-index: 10; }
+::view-transition-old(site-header) { display: none; }
+::view-transition-new(site-header) { animation: none; }
+::view-transition-old(root) { animation: album-page-out 160ms ease-out both; }
+::view-transition-new(root) { animation: album-page-in 280ms 60ms ease-out both; }
+@keyframes album-page-out { to { opacity: 0; } }
+@keyframes album-page-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+    animation-duration: 0s!important;
+    animation-delay: 0s!important;
+  }
+}
