@@ -5,14 +5,14 @@ import { Search } from 'lucide-react';
 import type { DiaryEntryData } from '../../lib/diary';
 import { groupDiaryEntries } from '../../lib/diary-groups';
 import DiaryEntry from './DiaryEntry';
+import MonthWheel from './MonthWheel';
 import './diary.css';
 export type JournalEntry = DiaryEntryData;
 export default function Journal({ entries, variant = 'journal' }: { entries: DiaryEntryData[]; variant?: 'journal' | 'chatter' | 'moments' }) {
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
-  const years = useMemo(() => [...new Set(entries.map(entry => entry.year).filter(Boolean))].sort().reverse(), [entries]);
-  const months = useMemo(() => [...new Set(entries.filter(entry => entry.year === year).map(entry => entry.month))].sort().reverse(), [entries, year]);
+  const periods = useMemo(() => entries.filter(entry => entry.year && entry.month).map(({ year, month }) => ({ year, month })), [entries]);
   const results = useMemo(() => entries.filter(entry => (!year || entry.year === year) && (!month || entry.month === month) && `${entry.title}\n${entry.fullText}\n${entry.tags.join(' ')}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())), [entries, query, year, month]);
   const groups = useMemo(() => groupDiaryEntries(results), [results]);
   const filtered = Boolean(query || year || month);
@@ -20,7 +20,7 @@ export default function Journal({ entries, variant = 'journal' }: { entries: Dia
     <header className="diary-header"><h1>{variant === 'chatter' ? '随手记' : variant === 'moments' ? '日常' : '日记'}</h1><p>{variant === 'journal' ? '按时间，翻一翻过去的日子。' : '一些随手写下的小事。'}</p></header>
     {entries.length > 0 && <div className="diary-tools">
       <label className="diary-search"><Search size={16} aria-hidden="true"/><input type="search" aria-label="搜索日记全文" placeholder="在日记里找一找…" value={query} onChange={event => setQuery(event.target.value)}/></label>
-      <div className="diary-periods"><select aria-label="按年份查看" value={year} onChange={event => { setYear(event.target.value); setMonth(''); }}><option value="">所有年份</option>{years.map(value => <option key={value} value={value}>{value} 年</option>)}</select><select aria-label="按月份查看" value={month} disabled={!year} onChange={event => setMonth(event.target.value)}><option value="">所有月份</option>{months.map(value => <option key={value} value={value}>{Number(value)} 月</option>)}</select></div>
+      <MonthWheel periods={periods} year={year} month={month} onChange={(nextYear, nextMonth) => { setYear(nextYear); setMonth(nextMonth); }}/>
       {filtered && <button className="diary-clear" onClick={() => { setQuery(''); setYear(''); setMonth(''); }}>清除筛选</button>}
     </div>}
     {groups.length > 0 ? <div className="diary-months">{groups.map((group, index) => <Fragment key={group.key}>

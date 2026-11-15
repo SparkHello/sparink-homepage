@@ -1,0 +1,12 @@
+.figure { margin: 4px 0 0; min-width: 0; }
+.photo { display: block; position: relative; width: 100%; aspect-ratio: 4 / 5; padding: 0; border: 0; background: #e5e6df; overflow: hidden; cursor: crosshair; touch-action: pan-y pinch-zoom; isolation: isolate; }
+.photo:disabled { cursor: default; }
+.photo img, .photo canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+.photo img { object-fit: cover; user-select: none; -webkit-user-drag: none; }
+.photo canvas { opacity: 0; pointer-events: none; }
+.photo canvas.ready { opacity: 1; }
+.photo:focus-visible { outline: 2px solid var(--blue); outline-offset: 5px; }
+.caption { display: flex; gap: 14px; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.control { background: transparent; border: 0; color: var(--muted); padding: 8px 0 8px 10px; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; min-height: 40px; font: inherit; }
+.control:hover, .control[aria-pressed="true"] { color: var(--blue); }
+@media (max-width: 760px) { .figure { width: 100%; max-width: 430px; margin: 5px auto 0; } .photo { aspect-ratio: 4 / 3; } .control { min-height: 44px; } }

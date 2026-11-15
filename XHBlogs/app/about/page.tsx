@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { albums } from "../../data/albums";
 import { siteConfig } from "../../siteConfig";
+import PhotoLens from "../../components/atelier/PhotoLens";
 
 export const metadata = {
   title: "关于",
@@ -27,7 +28,7 @@ export default function AboutPage() {
             <a href={`mailto:${siteConfig.social.email}`}>写封邮件</a>
           </div>
         </div>
-        {photo && siteConfig.features.photoWall && <figure className="about-life-photo"><img src={photo.url} alt={photo.caption || "旅行中拍下的照片"} loading="lazy" /></figure>}
+        {photo && siteConfig.features.photoWall && <PhotoLens key={photo.url} src={photo.url} alt={photo.caption || "旅行中拍下的照片"} />}
       </div>
       <section className="about-other-things">
         <h2>也会折腾一些别的</h2>

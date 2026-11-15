@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import HeroArt from "../components/atelier/HeroArt";
+import AlbumPhotoStack from "../components/atelier/AlbumPhotoStack";
 import DiaryEntry from "../components/atelier/DiaryEntry";
 import { listDiaryEntries } from "../lib/diary";
 import { albums } from "../data/albums";
@@ -43,16 +44,13 @@ export default async function Home() {
           <div className="home-album-pair">
             {recentAlbums.map((album, index) => {
               const first = album.photos.find((photo) => photo.url === album.cover) || album.photos[0];
-              const second = album.photos.find((photo) => photo.url !== first.url) || first;
+              const previewPhotos = [first, ...album.photos.filter((photo) => photo.url !== first.url)].slice(0, 5);
               return (
-                <Link href={`/photowall/${encodeURIComponent(album.id)}`} className={`home-album home-album-${index}`} key={album.id}>
-                  <div className="home-photo-stack" aria-hidden="true">
-                    <img className="stack-back" src={second.thumb || second.url} alt="" loading="lazy" />
-                    <img className="stack-front" src={first.thumb || first.url} alt="" loading="lazy" />
-                  </div>
-                  <div className="home-album-caption"><h3>{album.title.trim() || "相册"}</h3><ArrowRight size={17} /></div>
+                <article className={`home-album home-album-${index}`} key={album.id}>
+                  <AlbumPhotoStack photos={previewPhotos} title={album.title} variant={index === 1 ? "second" : "first"} />
+                  <Link href={`/photowall/${encodeURIComponent(album.id)}`} className="home-album-caption"><h3>{album.title.trim() || "相册"}</h3><ArrowRight size={17} /></Link>
                   {album.description && <p>{album.description}</p>}
-                </Link>
+                </article>
               );
             })}
           </div>
