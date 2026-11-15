@@ -1,8 +1,8 @@
-# Sparink の 数字花园
+# Sparink — 个人数字工作室
 
 Sparink 的个人主页与数字花园，记录 AI Agent、长期记忆、代码、硬件，以及偶尔冒出来的灵感。
 
-当前阶段以个人主页和项目展示为主。文章、杂谈、动态、相册与友链的模板示例内容已经清空，后续再逐步加入自己的内容。
+2026 年 11 月完成原创视觉重设计：暖白、墨黑与钴蓝的编辑式布局，原创 Three.js 记忆轨道雕塑，配套作品、手记、相册、关于、音乐和实验室页面。保留真实项目、62 张照片与原有本地内容工作台。
 
 ## 本地预览
 
@@ -22,8 +22,11 @@ npm run build
 
 ## 主要配置
 
-- 个人信息、社交链接、背景和功能开关：`XHBlogs/siteConfig.ts`
-- 长简介：`XHBlogs/app/about/aboutContent.ts`
+- 域名、数据及功能开关：`XHBlogs/siteConfig.ts`
+- 首页文案和精选作品：`XHBlogs/app/page.tsx`
+- 关于页：`XHBlogs/app/about/page.tsx`
+- 导航、联系和页脚：`XHBlogs/components/atelier/AtelierShell.tsx`
+- 视觉设计：`XHBlogs/app/globals.css` 和 `XHBlogs/components/atelier/*.css`
 - 项目列表：`XHBlogs/data/projects.ts`
 - 文章：`XHBlogs/posts/*.md`
 - 灵感碎片：`XHBlogs/chatters/*.md`
@@ -32,7 +35,7 @@ npm run build
 - 歌单：`XHBlogs/data/music.json`
 - 内容栏目开关：`XHBlogs/data/content-settings.json`
 
-AI 聊天、评论和天气接口默认关闭，避免公开部署后出现无意的 API 配额消耗。需要时请先配置对应环境变量和访问保护，再在 `siteConfig.ts` 中启用。
+新版页面使用原创 Atelier 组件。上游许可证保留，设计来处与致谢见网站 `/colophon`。文章阅读页支持 Markdown、代码高亮、公式、表格与目录。音乐仅在首次进入歌单页时加载，首屏不请求音乐接口。
 
 ## Sparink Studio 本地内容控制台
 

@@ -1,65 +1,35 @@
-import fs from 'fs';
-import path from 'path';
-import matter from '../../lib/frontmatter';
-import Navbar from '../../components/Navbar';
-import PageTransition from '../../components/PageTransition';
-import ChatterBoard from './ChatterBoard';
-import { siteConfig } from '@/siteConfig';
-
-type Chatter = {
-  slug: string;
-  title: string;
-  date: string;
-  tags: string[];
-  mood?: string;
-  cover?: string;
-  content: string;
-};
+import fs from "fs";
+import path from "path";
+import matter from "../../lib/frontmatter";
+import Journal, { type JournalEntry } from "../../components/atelier/Journal";
 
 export const metadata = {
-  title: "杂谈",
-  description: "日常碎片与灵感记录",
+  title: "灵感碎片",
+  description: "日常里值得停留片刻的念头。",
 };
 
 export default function ChatterPage() {
-  // 注意：这里我们假设你的 md 文件放在根目录的 chatters 文件夹里
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
-  let chatters: Chatter[] = [];
-
-  try {
-    // 确保文件夹存在
-    if (!fs.existsSync(chattersDirectory)) {
-      fs.mkdirSync(chattersDirectory);
-    }
-
-    const fileNames = fs.readdirSync(chattersDirectory).filter(fileName => fileName.endsWith('.md'));
-
-    chatters = fileNames.map(fileName => {
-      const slug = fileName.replace(/\.md$/, '');
-      const fileContents = fs.readFileSync(path.join(chattersDirectory, fileName), 'utf8');
-      const { data, content } = matter(fileContents);
-
-      return {
-        slug,
-        title: data.title || '',
-        date: data.date || '未知时间',
-        tags: data.tags || [],
-        mood: data.mood || '',
-        cover: data.cover || '',
-        content: content.replace(/^#+ .*\n/m, '') // 去除开头的 markdown 标题以优化截取显示
-      };
-    }).sort((a, b) => (new Date(b.date).getTime() - new Date(a.date).getTime())); // 按时间倒序
-  } catch (e) {
-    console.error("读取杂谈文件失败:", e);
-  }
-
-  return (
-    <div className="min-h-screen relative pb-10">
-      <Navbar />
-      <PageTransition>
-        {/* 将解析好的数据传递给客户端组件进行瀑布流渲染 */}
-        <ChatterBoard chatters={chatters} />
-      </PageTransition>
-    </div>
-  );
+  const directory = path.join(process.cwd(), "chatters");
+  const entries: JournalEntry[] = fs.existsSync(directory)
+    ? fs
+        .readdirSync(directory)
+        .filter((name) => name.endsWith(".md"))
+        .map((name) => {
+          const { data, content } = matter(
+            fs.readFileSync(path.join(directory, name), "utf8"),
+          );
+          return {
+            slug: name.replace(/\.md$/, ""),
+            title: String(data.title || "一个小小的想法"),
+            date: String(data.date || ""),
+            description: String(
+              data.description ||
+                content.replace(/^#+ .*\n/m, "").slice(0, 160),
+            ),
+            tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+          };
+        })
+        .sort((a, b) => b.date.localeCompare(a.date))
+    : [];
+  return <Journal entries={entries} variant="chatter" />;
 }

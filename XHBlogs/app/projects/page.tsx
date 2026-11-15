@@ -1,22 +1,12 @@
-import Navbar from '../../components/Navbar';
-import PageTransition from '../../components/PageTransition';
-import ProjectsBoard from './ProjectsBoard';
-import {siteConfig} from "@/siteConfig";
+import ProjectsBoard from "./ProjectsBoard";
+import "../../components/atelier/secondary.css";
 
 export const metadata = {
-  title: "项目矩阵",
-  description: "开源项目与代码仓库展示",
+  title: "作品与实验",
+  description: "Sparink 的 AI Agent、长期记忆和个人软件项目。",
+  alternates: { canonical: "/projects" },
 };
 
 export default function ProjectsPage() {
-  return (
-    <div className="min-h-screen relative pb-20">
-      <Navbar />
-      <PageTransition>
-        <div className="mt-28">
-          <ProjectsBoard />
-        </div>
-      </PageTransition>
-    </div>
-  );
+  return <ProjectsBoard />;
 }

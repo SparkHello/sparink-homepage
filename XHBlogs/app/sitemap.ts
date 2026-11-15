@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "../siteConfig";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ["", "/projects", "/timeline", "/about"];
+  const routes = ["", "/projects", "/timeline", "/about", "/colophon"];
 
   if (siteConfig.features.photoWall) routes.push("/photowall");
   if (siteConfig.features.music) routes.push("/music");
@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return routes.map((route) => ({
     url: `${siteConfig.siteUrl}${route}`,
-    lastModified: new Date("2026-08-22T00:00:00+08:00"),
+    lastModified: new Date("2026-11-15T00:00:00+08:00"),
     changeFrequency: route === "" ? "weekly" : "monthly",
     priority: route === "" ? 1 : 0.7,
   }));

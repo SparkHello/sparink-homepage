@@ -1,250 +1,242 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
-import PageTransition from '../../components/PageTransition';
-import { albums, Album, Photo } from '../../data/albums';
-
-// 网格里只加载缩略图，全尺寸留给灯箱。旧记录没有 thumb 时退回原图。
-const gridSrc = (photo: Photo) => photo.thumb || photo.url;
-
-// 封面存的是 URL，回查对应照片才能拿到它的缩略图。
-const asPhoto = (url: string, album: Album): Photo =>
-  album.photos.find((photo) => photo.url === url) ?? { url };
-
-// 逐张递增的入场延迟在 49 张时会让最后一张等 2.4 秒，封顶到第 8 张。
-const enterDelay = (index: number) => `${Math.min(index, 8) * 50}ms`;
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Search, X } from "lucide-react";
+import { albums } from "../../data/albums";
 
 export default function PhotoWallClient() {
-  const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
-  const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string} | null>(null);
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeQuery, setActiveQuery] = useState('');
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  useEffect(() => {
-    setIsTransitioning(true);
-
-    const timer = setTimeout(() => {
-      setActiveQuery(searchQuery.toLowerCase());
-      setIsTransitioning(false);
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const { matchedAlbums, matchedPhotos } = useMemo(() => {
-    if (!activeQuery) return { matchedAlbums: albums, matchedPhotos: [] };
-
-    const matchedAlbums = albums.filter(album =>
-      album.title.toLowerCase().includes(activeQuery) ||
-      album.description.toLowerCase().includes(activeQuery)
+  const [albumId, setAlbumId] = useState("all");
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const returnFocus = useRef<HTMLButtonElement | null>(null);
+  const visible = useMemo(
+    () =>
+      albums
+        .filter((album) => albumId === "all" || album.id === albumId)
+        .flatMap((album) =>
+          album.photos.map((photo, i) => ({
+            ...photo,
+            albumTitle: album.title,
+            date: album.date,
+            id: `${album.id}-${i}`,
+          })),
+        )
+        .filter(
+          (photo) =>
+            !query.trim() ||
+            `${photo.caption || ""} ${photo.albumTitle}`
+              .toLowerCase()
+              .includes(query.toLowerCase().trim()),
+        ),
+    [albumId, query],
+  );
+  const current = selected === null ? null : visible[selected];
+  const open = (index: number, trigger: HTMLButtonElement) => {
+    returnFocus.current = trigger;
+    setSelected(index);
+    dialogRef.current?.showModal();
+  };
+  const close = () => dialogRef.current?.close();
+  const step = (direction: number) =>
+    setSelected((index) =>
+      index === null
+        ? null
+        : (index + direction + visible.length) % visible.length,
     );
-
-    const matchedPhotos = albums.flatMap(album =>
-      album.photos.map(p => ({ ...p, albumName: album.title }))
-    ).filter(photo => photo.caption?.toLowerCase().includes(activeQuery));
-
-    return { matchedAlbums, matchedPhotos };
-  }, [activeQuery]);
-
+  useEffect(() => {
+    if (selected === null) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [selected]);
   return (
-    <div className="min-h-screen relative pb-32">
-      <Navbar />
-
-      <PageTransition>
-        <div className="w-full max-w-7xl mx-auto mt-28 px-4 sm:px-10 relative z-10">
-
-          {!currentAlbum && (
-            <div className="animate-fade-in-up">
-              <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
-                <div>
-                  <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-widest mb-2 transition-colors duration-700">光影画廊</h1>
-                  <p className="text-slate-600 dark:text-slate-400 font-medium tracking-wider transition-colors duration-700">以后会在这里收集摄影、硬件与生活里的光影。</p>
-                </div>
-
-                <div className="relative w-full md:w-80 group">
-                  <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="搜索相册名或照片描述..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-12 pl-12 pr-4 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-full text-sm text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-sm transition-all duration-700"
-                  />
-                </div>
-              </div>
-
-              <div className={`transition-opacity duration-300 ease-in-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-
-                {activeQuery && matchedPhotos.length > 0 && (
-                  <div className="mb-16">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
-                      <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
-                      匹配的单张照片 ({matchedPhotos.length})
-                    </h3>
-                    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-                      {matchedPhotos.map((photo, index) => (
-                        <div
-                          key={`search-photo-${index}`}
-                          onClick={() => setSelectedImage(photo)}
-                          className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-transform duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-indigo-500/20"
-                        >
-                          <img src={gridSrc(photo)} alt={photo.caption} width={photo.width} height={photo.height} className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" loading="lazy" decoding="async" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
-                            <span className="text-indigo-300 font-black text-[10px] tracking-widest uppercase mb-1 drop-shadow-md">{photo.albumName}</span>
-                            <p className="text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">{photo.caption}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {activeQuery && matchedAlbums.length > 0 && (
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
-                    <span className="w-2 h-6 bg-purple-500 rounded-full"></span>
-                    相关相册 ({matchedAlbums.length})
-                  </h3>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20 mt-10">
-                  {matchedAlbums.map((album, index) => (
-                    <div
-                      key={album.id}
-                      onClick={() => { setSearchQuery(''); setCurrentAlbum(album); }}
-                      className="group cursor-pointer flex flex-col items-center"
-                    >
-                      <div className="relative w-[85%] aspect-[4/3] mb-8">
-                        <div className="absolute inset-0 bg-slate-300 dark:bg-slate-700 rounded-[4px] shadow-md transform rotate-6 translate-x-4 translate-y-2 group-hover:rotate-12 group-hover:translate-x-8 transition-all duration-500 border-[6px] border-white dark:border-slate-200 overflow-hidden opacity-60">
-                           {album.photos[2] && <img src={gridSrc(album.photos[2])} className="w-full h-full object-cover grayscale blur-[2px]" alt="" loading="lazy" decoding="async" />}
-                        </div>
-                        <div className="absolute inset-0 bg-slate-200 dark:bg-slate-600 rounded-[4px] shadow-lg transform -rotate-3 -translate-x-2 -translate-y-1 group-hover:-rotate-6 group-hover:-translate-x-6 transition-all duration-500 border-[6px] border-white dark:border-slate-200 overflow-hidden opacity-80 z-10">
-                           {album.photos[1] && <img src={gridSrc(album.photos[1])} className="w-full h-full object-cover grayscale-[50%]" alt="" loading="lazy" decoding="async" />}
-                        </div>
-                        <div className="absolute inset-0 bg-white dark:bg-slate-200 rounded-[4px] shadow-2xl border-[6px] border-white dark:border-slate-200 overflow-hidden z-20 transform group-hover:-translate-y-2 group-hover:scale-105 transition-all duration-500 relative">
-                          <img src={gridSrc(asPhoto(album.cover, album))} alt={album.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" decoding="async" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
-                            <span className="text-white font-bold text-lg drop-shadow-md translate-y-2 group-hover:translate-y-0 transition-transform duration-500">{album.photos.length} 张照片</span>
-                            <span className="text-indigo-300 font-medium text-xs mt-1 drop-shadow-md translate-y-2 group-hover:translate-y-0 transition-transform duration-500 delay-75">Click to Open</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-center px-4 w-full">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <h2 className="text-xl font-bold text-slate-900 dark:text-white transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{album.title}</h2>
-                          <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-white/60 dark:bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-sm uppercase tracking-wider">{album.date}</span>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1">{album.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {!activeQuery && albums.length === 0 && (
-                  <div className="rounded-[32px] bg-white/45 dark:bg-slate-800/45 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl px-6 py-16 text-center">
-                    <div className="text-5xl mb-5" aria-hidden="true">📷</div>
-                    <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">第一卷胶片还没有冲洗</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">相册结构已经准备好，等以后慢慢加入自己的照片。</p>
-                  </div>
-                )}
-
-                {activeQuery && matchedAlbums.length === 0 && matchedPhotos.length === 0 && (
-                  <div className="text-center py-20 text-slate-500 font-medium">
-                    没有找到与“{searchQuery}”相关的照片或相册。
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {currentAlbum && (
-            <div className="animate-fade-in-up">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4 border-b border-slate-300/50 dark:border-slate-700/50 pb-6">
-                <div>
-                  <div className="flex items-center gap-4 mb-4">
-                    <button
-                      onClick={() => setCurrentAlbum(null)}
-                      className="group flex items-center gap-1.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                    >
-                      <span className="bg-white/40 dark:bg-slate-800/50 backdrop-blur-md p-1.5 rounded-lg border border-white/50 dark:border-white/10 shadow-sm group-hover:shadow-md transition-all">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                      </span>
-                      返回画廊
-                    </button>
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
-                    <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{currentAlbum.date}</span>
-                  </div>
-                  <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-wider mb-2">{currentAlbum.title}</h1>
-                  <p className="text-slate-600 dark:text-slate-400 font-medium text-lg">{currentAlbum.description}</p>
-                </div>
-
-                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/50 dark:border-white/10 shadow-sm">
-                  共 <span className="text-indigo-500 dark:text-indigo-400 text-lg">{currentAlbum.photos.length}</span> 瞬间
-                </div>
-              </div>
-
-              <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-                {currentAlbum.photos.map((photo, index) => (
-                  <div
-                    key={`${photo.url}-${index}`}
-                    onClick={() => setSelectedImage(photo)}
-                    className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-transform duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-indigo-500/20 animate-fade-in-up"
-                    style={{ animationDelay: enterDelay(index) }}
-                  >
-                    <img src={gridSrc(photo)} alt={photo.caption || '照片'} width={photo.width} height={photo.height} className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" loading="lazy" decoding="async" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
-                      {photo.caption && (
-                        <p className="text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                          {photo.caption}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+    <main className="page-wrap sp-secondary sp-photo-page">
+      <header className="sp-page-intro">
+        <div className="eyebrow sp-overline">
+          <span className="sp-small-dot" /> A VISUAL JOURNAL
         </div>
-      </PageTransition>
-
-      {selectedImage && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 sm:p-10 cursor-zoom-out animate-fade-in"
-          onClick={() => setSelectedImage(null)}
-        >
-          <button className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full p-2">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <div className="sp-intro-grid">
+          <h1>
+            日子很慢，
+            <br />
+            光影很长<span className="sp-blue">。</span>
+          </h1>
+          <p>
+            途中见过的风景，身边细小的日常。
+            <br />
+            把一些舍不得忘记的瞬间，放在这里。
+            <span className="sp-intro-en">
+              Collected moments, quietly kept.
+            </span>
+          </p>
+        </div>
+      </header>
+      <div className="sp-filter-row sp-photo-filter">
+        <div className="sp-filter-list" aria-label="选择相册">
+          <button
+            type="button"
+            aria-pressed={albumId === "all"}
+            className={albumId === "all" ? "is-active" : ""}
+            onClick={() => setAlbumId("all")}
+          >
+            全部照片{" "}
+            <small>
+              {albums.reduce((n, album) => n + album.photos.length, 0)}
+            </small>
           </button>
-
-          <img
-            src={selectedImage.url}
-            alt={selectedImage.caption || '全屏照片'}
-            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+          {albums.map((album) => (
+            <button
+              key={album.id}
+              type="button"
+              aria-pressed={albumId === album.id}
+              className={albumId === album.id ? "is-active" : ""}
+              onClick={() => setAlbumId(album.id)}
+            >
+              {album.title.replace("🐱", "")}{" "}
+              <small>{album.photos.length}</small>
+            </button>
+          ))}
+        </div>
+        <label className="sp-photo-search">
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="寻找一个瞬间…"
+            aria-label="搜索相册或照片描述"
           />
-
-          {selectedImage.caption && (
-            <div className="absolute bottom-10 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white text-sm font-medium tracking-wide shadow-2xl">
-              {selectedImage.caption}
-            </div>
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="清除搜索"
+            >
+              <X size={14} />
+            </button>
           )}
+        </label>
+      </div>
+      <div className="sp-photo-meta">
+        <span className="eyebrow" aria-live="polite">
+          {String(visible.length).padStart(2, "0")} MOMENTS
+        </span>
+        <span>点击照片，慢慢看。</span>
+      </div>
+      <div className="sp-photo-masonry">
+        {visible.map((photo, index) => (
+          <figure key={photo.id} className="sp-photo-item">
+            <button
+              type="button"
+              onClick={(event) => open(index, event.currentTarget)}
+              aria-label={`放大照片：${photo.caption || photo.albumTitle}，第 ${index + 1} 张`}
+            >
+              <img
+                src={photo.thumb || photo.url}
+                alt={photo.caption || `${photo.albumTitle} · ${index + 1}`}
+                width={photo.width || 1200}
+                height={photo.height || 1600}
+                loading={index < 4 ? "eager" : "lazy"}
+                decoding="async"
+              />
+              <span className="sp-photo-expand">
+                <ArrowUpRight size={22} />
+              </span>
+            </button>
+            <figcaption>
+              <span>{photo.caption || photo.albumTitle.replace("🐱", "")}</span>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+      {!visible.length && (
+        <div className="sp-empty">
+          <span className="eyebrow">NOT FOUND, YET.</span>
+          <h2>这一刻，还没找到。</h2>
+          <p>换个关键词，或回到全部照片看看。</p>
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setAlbumId("all");
+            }}
+          >
+            查看全部照片 <ArrowRight size={18} />
+          </button>
         </div>
       )}
-
-      <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-      `}</style>
-    </div>
+      <dialog
+        ref={dialogRef}
+        className="sp-lightbox"
+        aria-labelledby="sp-photo-caption"
+        onClose={() => {
+          setSelected(null);
+          returnFocus.current?.focus();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) close();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            step(-1);
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            step(1);
+          }
+        }}
+      >
+        <button
+          className="sp-lightbox-close"
+          type="button"
+          onClick={close}
+          aria-label="关闭照片"
+        >
+          <X size={24} />
+        </button>
+        {current && (
+          <div className="sp-lightbox-inner">
+            <div className="sp-lightbox-heading">
+              <span className="eyebrow">
+                {current.albumTitle.replace("🐱", "")}
+              </span>
+              <span>
+                {String((selected || 0) + 1).padStart(2, "0")} /{" "}
+                {String(visible.length).padStart(2, "0")}
+              </span>
+            </div>
+            <img
+              src={current.url}
+              alt={current.caption || current.albumTitle}
+            />
+            <div className="sp-lightbox-bottom">
+              <p id="sp-photo-caption" aria-live="polite">
+                {current.caption || current.albumTitle.replace("🐱", "")}
+              </p>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => step(-1)}
+                  aria-label="上一张照片"
+                >
+                  <ArrowLeft size={22} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => step(1)}
+                  aria-label="下一张照片"
+                >
+                  <ArrowRight size={22} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </dialog>
+    </main>
   );
 }

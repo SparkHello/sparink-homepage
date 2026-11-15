@@ -1,161 +1,344 @@
-import fs from 'fs';
-import path from 'path';
-import matter from '../lib/frontmatter';
-import Link from 'next/link';
-
-import Navbar from '../components/Navbar';
-import PageTransition from '../components/PageTransition';
-import SearchBar from '../components/SearchBar';
-import { siteConfig } from '../siteConfig';
-import CloudPlayer from '../components/CloudPlayer';
-import ThemeToggleBlock from '../components/ThemeToggleBlock';
-import ProfileCard from '../components/ProfileCard';
-import SiteDashboard from '../components/SiteDashboard';
-import { albums } from '../data/albums';
-import LyricBar from '../components/LyricBar';
-import { ToastProvider } from '../components/ToastProvider';
-
-import LatestPostsCarousel from '../components/LatestPostsCarousel';
-import LatestChatterCarousel from '../components/LatestChatterCarousel';
-
-function formatUpdateTime(dateString: string) {
-  if (!dateString || dateString === '1970-01-01') return '刚刚更新';
-  try {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return dateString;
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const mins = String(d.getMinutes()).padStart(2, '0');
-    if (hours === '00' && mins === '00') return `${year}.${month}.${day}`;
-    return `${year}.${month}.${day} ${hours}:${mins}`;
-  } catch { return dateString; }
-}
-
+import Link from "next/link";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  ArrowRight,
+  Command,
+  Plus,
+} from "lucide-react";
+import HeroArt from "../components/atelier/HeroArt";
+import Reveal from "../components/atelier/Reveal";
+import { albums } from "../data/albums";
+import { siteConfig } from "../siteConfig";
 export default function Home() {
-  const postsDirectory = path.join(process.cwd(), 'posts');
-  let allPosts: any[] = [];
-  try {
-    if (fs.existsSync(postsDirectory)) {
-      const fileNames = fs.readdirSync(postsDirectory).filter(f => f.endsWith('.md'));
-      allPosts = fileNames.map(fileName => {
-        const fullPath = path.join(postsDirectory, fileName);
-        const { data, content } = matter(fs.readFileSync(fullPath, 'utf8'));
-        const rawDate = data.date || '1970-01-01';
-        return {
-          slug: fileName.replace(/\.md$/, ''),
-          ...data,
-          title: data.title || '',
-          description: data.description || '',
-          content: content || '',
-          date: rawDate,
-          formattedDate: formatUpdateTime(rawDate)
-        };
-      }).sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (dateB !== dateA) return dateB - dateA;
-        return b.slug.localeCompare(a.slug);
-      });
-    }
-  } catch (e) {}
-  const top5Posts = allPosts.length > 0 ? allPosts.slice(0, 5) : [{ slug: 'none', title: '第一篇文章正在酝酿', description: '以后会在这里记录 AI、代码和硬件相关的折腾过程。', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
-
-  const chattersDirectory = path.join(process.cwd(), 'chatters');
-  let allChatters: any[] = [];
-  try {
-    if (fs.existsSync(chattersDirectory)) {
-      const chatterFiles = fs.readdirSync(chattersDirectory).filter(f => f.endsWith('.md'));
-      allChatters = chatterFiles.map(fileName => {
-        const fullPath = path.join(chattersDirectory, fileName);
-        const { data, content } = matter(fs.readFileSync(fullPath, 'utf8'));
-        const rawDate = data.date || '1970-01-01';
-        const cover = data.cover || siteConfig.defaultPostCover;
-        return { slug: fileName.replace(/\.md$/, ''), title: data.title || '碎片记录', description: data.description || content.substring(0, 60), cover: cover, date: rawDate, formattedDate: formatUpdateTime(rawDate) };
-      }).sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (dateB !== dateA) return dateB - dateA;
-        return b.slug.localeCompare(a.slug);
-      });
-    }
-  } catch (e) {}
-  const top5Chatters = allChatters.length > 0 ? allChatters.slice(0, 5) : [{ slug: 'none', title: '一些想法正在路上', description: '短笔记与灵感碎片以后会出现在这里。', cover: siteConfig.defaultPostCover, date: '', formattedDate: '' }];
-
-  const chatterCount = siteConfig.features.chatter ? allChatters.length : 0;
-  const realPhotoCount = albums.reduce((total, album) => total + album.photos.length, 0);
-  const latestAlbum = albums.length > 0 ? albums[0] : { id: '', title: '照片墙待更新', description: '摄影与生活记录以后会慢慢补上。', cover: siteConfig.photoWallImage, date: '' };
-
+  const travel = albums.find((album) => album.id === "travel-2026");
+  const photos = [
+    travel?.photos[6],
+    travel?.photos[0],
+    albums[0]?.photos[0],
+  ].filter(Boolean);
   return (
-    <ToastProvider>
-      <div className="min-h-screen relative pb-10">
-        <Navbar />
-        <PageTransition>
-          {/* 🌟 调整整体容器的内边距，适应手机端更小的屏幕 */}
-          <div className="w-full max-w-6xl mx-auto mt-24 sm:mt-28 px-4 sm:px-6 lg:px-10 relative z-10">
-            <SearchBar posts={allPosts} />
-
-            <main className="flex flex-col gap-6 w-full mt-6">
-
-              {/* 第一行：个人信息 + 播放器 */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
-                {/* 手机上占满1列，电脑上占7列 */}
-                <div className="col-span-1 lg:col-span-7 flex flex-col">
-                    <ProfileCard postCount={allPosts.length} chatterCount={chatterCount} photoCount={realPhotoCount}/>
-                </div>
-                {/* 手机上占满1列，电脑上占5列 */}
-                <div className="col-span-1 lg:col-span-5 flex flex-col">
-                    <CloudPlayer/>
-                </div>
-              </div>
-
-              {/* 歌词栏 */}
-              <div className="w-full mt-[-10px]"><LyricBar/></div>
-
-              {/* 第二行：文章轮播 + 照片墙 + 说说 + 主题切换 */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
-
-                {/* 左侧：文章轮播 (电脑端占4列，手机端排最上面) */}
-                <div className="col-span-1 lg:col-span-4 flex flex-col min-h-[300px]">
-                  <LatestPostsCarousel posts={top5Posts} />
-                </div>
-
-                {/* 右侧：组合面板 (电脑端占8列) */}
-                <div className="col-span-1 lg:col-span-8 flex flex-col gap-6">
-
-                  {/* 照片墙大海报 */}
-                  <Link href="/photowall" className="w-full rounded-3xl bg-white/40 dark:bg-slate-800/50 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-xl overflow-hidden transition-all duration-700 hover:scale-[1.02] relative group min-h-[200px] sm:min-h-[220px] flex-shrink-0">
-                    <img src={latestAlbum.cover} className="w-full h-full absolute inset-0 object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"/>
-                    <div className="absolute inset-0 bg-black/30 dark:bg-black/50 group-hover:bg-black/10 transition-colors duration-500"></div>
-                    <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 right-6">
-                      <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 underline decoration-pink-400">{latestAlbum.title}</h3>
-                      <p className="text-white/90 text-sm sm:text-lg line-clamp-1">{latestAlbum.description}</p>
-                    </div>
-                  </Link>
-
-                  {/* 底层网格：说说轮播 + 主题切换器 */}
-                  {/* 手机上单列，平板上分3列比例分布 */}
-                  <div className={`grid grid-cols-1 gap-6 w-full flex-1 ${siteConfig.features.chatter ? 'sm:grid-cols-3' : 'sm:grid-cols-1'}`}>
-                    {siteConfig.features.chatter && (
-                      <div className="sm:col-span-2 flex flex-col min-h-[200px]">
-                        <LatestChatterCarousel chatters={top5Chatters} />
-                      </div>
-                    )}
-                    <div className="sm:col-span-1 flex flex-col min-h-[120px]">
-                      <ThemeToggleBlock />
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* 底部数据面板 */}
-              <div className="w-full mt-4"><SiteDashboard/></div>
-            </main>
+    <main className="home-page">
+      <section className="hero page-wrap" aria-labelledby="hero-heading">
+        <div className="hero-topline eyebrow">
+          <span>
+            <i className="live-dot" /> A PERSONAL SPACE FOR EXPLORATION
+          </span>
+          <span>CODE · CURIOSITY · LIFE</span>
+        </div>
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <p className="hero-greeting">
+              你好，我是 Sparink <span>↗</span>
+            </p>
+            <h1 id="hero-heading">
+              保持好奇。
+              <br />
+              持续<span className="cobalt">构建</span>。
+            </h1>
+            <p className="hero-description">
+              在代码与生活的交界处，
+              <br />
+              把一些好奇，变成摸得着的东西。
+            </p>
+            <div className="hero-actions">
+              <Link href="/projects" className="button-primary">
+                探索我的作品 <ArrowUpRight size={18} />
+              </Link>
+              <Link href="/about" className="text-link">
+                认识我 <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="hero-identity">
+              <span className="identity-line" />
+              <span>
+                计算机科学学生
+                <br />
+                <small>INDEPENDENT BUILDER</small>
+              </span>
+            </div>
           </div>
-        </PageTransition>
-      </div>
-    </ToastProvider>
+          <HeroArt />
+        </div>
+        <div className="hero-baseline">
+          <span className="eyebrow">BASED IN CURIOSITY.</span>
+          <p>
+            AI Agents <span>/</span> Long-term Memory <span>/</span> Everyday
+            Experiments
+          </p>
+          <a href="#selected-work" aria-label="向下浏览精选项目">
+            <ArrowDownRight size={23} />
+          </a>
+        </div>
+      </section>
+      <section
+        id="selected-work"
+        className="work-section page-wrap"
+        aria-labelledby="work-heading"
+      >
+        <Reveal>
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">01 / SELECTED WORK</p>
+              <h2 id="work-heading">
+                让想法，
+                <br />
+                <span className="muted">开始运行。</span>
+              </h2>
+            </div>
+            <div className="section-aside">
+              <p>
+                一些正在生长的项目。
+                <br />
+                关于更好的工具，也关于新的可能。
+              </p>
+              <Link href="/projects" className="text-link">
+                全部作品 <ArrowUpRight size={17} />
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+        <Reveal>
+          <Link href="/projects#kun" className="featured-project">
+            <div className="project-visual kun-visual">
+              <div className="visual-caption eyebrow">
+                KUN / THE AGENT WORKSPACE
+              </div>
+              <div className="kun-window" aria-label="Kun 工作台概念示意">
+                <div className="window-rail">
+                  <span className="mini-k">K</span>
+                  <Plus size={15} />
+                  <span>⌘</span>
+                  <span>◎</span>
+                  <span>⊞</span>
+                </div>
+                <div className="window-main">
+                  <div className="window-topbar">
+                    <span>Workspace</span>
+                    <span className="window-dots">● ● ●</span>
+                  </div>
+                  <div className="window-welcome">
+                    <Command size={24} />
+                    <h3>
+                      A little curiosity.
+                      <br />A world of possibility.
+                    </h3>
+                    <p>每一个想法，都值得一个开始。</p>
+                  </div>
+                  <div className="mock-prompt">
+                    <span>今天，我们一起做点什么？</span>
+                    <span className="prompt-submit">↑</span>
+                  </div>
+                  <div className="mock-modes">
+                    <span>⌘ Code</span>
+                    <span>✳ Write</span>
+                    <span>◇ Design</span>
+                  </div>
+                </div>
+              </div>
+              <div className="visual-footnote">概念演绎 · GUI + TUI</div>
+              <span className="project-open">
+                <ArrowUpRight />
+              </span>
+            </div>
+            <div className="project-caption">
+              <div>
+                <h3>
+                  Kun <span>01</span>
+                </h3>
+                <p>从一个想法，到一次真正的交付。</p>
+              </div>
+              <span className="project-category">AI AGENT WORKSPACE</span>
+            </div>
+          </Link>
+        </Reveal>
+        <div className="project-pair">
+          <Reveal>
+            <Link href="/projects#memory-platform" className="project-card">
+              <div className="project-visual memory-visual">
+                <div className="visual-caption eyebrow">
+                  MEMORY / CONTINUITY
+                </div>
+                <div className="memory-diagram" aria-hidden="true">
+                  <div className="memory-orbit orbit-a" />
+                  <div className="memory-orbit orbit-b" />
+                  <div className="memory-orbit orbit-c" />
+                  <span className="memory-node node-one">想法</span>
+                  <span className="memory-node node-two">偏好</span>
+                  <span className="memory-node node-three">日常</span>
+                  <div className="memory-core">
+                    m<span>·</span>
+                  </div>
+                </div>
+                <span className="project-open">
+                  <ArrowUpRight />
+                </span>
+              </div>
+              <div className="project-caption">
+                <div>
+                  <h3>
+                    Memory Platform <span>02</span>
+                  </h3>
+                  <p>让对话结束之后，记忆仍然继续。</p>
+                </div>
+              </div>
+            </Link>
+          </Reveal>
+          <Reveal>
+            <Link href="/projects#lastchat" className="project-card">
+              <div className="project-visual chat-visual">
+                <div className="visual-caption eyebrow">
+                  LASTCHAT / A PERSONAL AI
+                </div>
+                <div className="chat-composition">
+                  <div className="chat-orb">✳</div>
+                  <div className="chat-bubble chat-question">
+                    好的工具，应该是什么样子？
+                  </div>
+                  <div className="chat-bubble chat-answer">
+                    理解你的习惯，
+                    <br />
+                    也尊重你的不同。
+                    <span className="chat-cursor" />
+                  </div>
+                  <div className="chat-meta">
+                    LOCAL FIRST <span>↗</span> MADE PERSONAL
+                  </div>
+                </div>
+                <span className="project-open">
+                  <ArrowUpRight />
+                </span>
+              </div>
+              <div className="project-caption">
+                <div>
+                  <h3>
+                    LastChat <span>03</span>
+                  </h3>
+                  <p>一个更贴近自己的 Android AI 助手。</p>
+                </div>
+              </div>
+            </Link>
+          </Reveal>
+        </div>
+      </section>
+      <section className="about-band">
+        <div className="page-wrap">
+          <Reveal>
+            <div className="about-band-grid">
+              <div>
+                <p className="section-kicker">02 / THE PERSON BEHIND</p>
+                <div className="about-symbol" aria-hidden="true">
+                  ✳
+                </div>
+                <span className="eyebrow">
+                  A WORK IN PROGRESS.
+                  <br />
+                  JUST LIKE ME.
+                </span>
+              </div>
+              <div>
+                <h2>
+                  喜欢拆开工具，
+                  <br />
+                  也喜欢<span>亲手创造。</span>
+                </h2>
+                <p>
+                  我是 Sparink，一名计算机科学学生。我关心 AI
+                  如何协作、记忆如何延续，也享受把一个模糊的念头，一点点做成真实工具的过程。
+                </p>
+                <p>屏幕之外，是旅行、摄影、机械键盘，以及猫。</p>
+                <Link href="/about" className="text-link">
+                  更多关于我 <ArrowUpRight size={18} />
+                </Link>
+                <div className="interest-line">
+                  <span>AI & AGENTS</span>
+                  <span>CODE & HARDWARE</span>
+                  <span>CATS & LIFE</span>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+      {siteConfig.features.photoWall && (
+        <section className="life-section page-wrap">
+          <Reveal>
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">03 / OFF THE SCREEN</p>
+                <h2>
+                  也看看，
+                  <br />
+                  <span className="muted">屏幕之外。</span>
+                </h2>
+              </div>
+              <div className="section-aside">
+                <p>
+                  不只有代码。
+                  <br />
+                  还有路上的云，和一些小小的日常。
+                </p>
+                <Link href="/photowall" className="text-link">
+                  打开相册 <ArrowUpRight size={17} />
+                </Link>
+              </div>
+            </div>
+          </Reveal>
+          <div className="life-grid">
+            {photos.map(
+              (photo, index) =>
+                photo && (
+                  <Reveal
+                    key={photo.url}
+                    className={`life-photo life-photo-${index}`}
+                  >
+                    <Link href="/photowall">
+                      <div className="life-image">
+                        <img
+                          src={photo.url}
+                          alt={photo.caption || "糯米与十一的日常"}
+                          loading="lazy"
+                        />
+                        <span className="photo-hover">
+                          <ArrowUpRight /> 查看相册
+                        </span>
+                      </div>
+                      <div className="photo-caption">
+                        <span>
+                          {index === 2
+                            ? "糯米 & 十一"
+                            : photo.caption || "途中"}
+                        </span>
+                        <small>
+                          0{index + 1} /{" "}
+                          {index === 2 ? "EVERYDAY" : "ON THE ROAD"}
+                        </small>
+                      </div>
+                    </Link>
+                  </Reveal>
+                ),
+            )}
+          </div>
+        </section>
+      )}
+      <section className="journal-teaser page-wrap">
+        <Reveal>
+          <div className="journal-line">
+            <span className="section-kicker">04 / FIELD NOTES</span>
+            <div>
+              <h2>思考，也留下痕迹。</h2>
+              <p>把折腾过的过程、试错和新发现，慢慢写下来。</p>
+            </div>
+            <Link
+              className="circle-link"
+              href="/timeline"
+              aria-label="阅读手记"
+            >
+              <ArrowUpRight size={26} />
+            </Link>
+          </div>
+        </Reveal>
+      </section>
+    </main>
   );
 }

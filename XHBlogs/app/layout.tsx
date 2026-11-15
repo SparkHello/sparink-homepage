@@ -1,164 +1,50 @@
-import 'katex/dist/katex.min.css';
+import "katex/dist/katex.min.css";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Serif_SC } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
-import BackgroundEffects from "../components/BackgroundEffects";
 import { MusicProvider } from "../components/MusicProvider";
-import FloatingPlayer from "../components/FloatingPlayer";
-import { siteConfig } from "../siteConfig";
-import ClickEffect from "../components/ClickEffect";
-import BackgroundSlider from "../components/BackgroundSlider";
-import GlobalToolbox from "../components/GlobalToolbox";
-import SplashScreen from "../components/SplashScreen";
-import CyberCat from '../components/CyberCat';
-import DanmakuBackground from '../components/DanmakuBackground';
-
-import MobileBackButton from '../components/MobileBackButton';
-
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-
-const notoSerif = Noto_Serif_SC({
+import AtelierShell from "../components/atelier/AtelierShell";
+const sans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-serif",
-  display: 'swap',
+  display: "swap",
 });
-
+const mono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.siteUrl),
-  title: {
-    default: siteConfig.title,
-    template: `%s | ${siteConfig.authorName}`,
-  },
-  description: siteConfig.bio,
-  alternates: { canonical: "/" },
+  metadataBase: new URL("https://sparink.net"),
+  title: { default: "Sparink — 保持好奇，持续构建", template: "%s · Sparink" },
+  description:
+    "Sparink 的个人数字工作室。探索 AI Agent、长期记忆、代码，以及屏幕之外的日常。",
   openGraph: {
     type: "website",
     locale: "zh_CN",
-    url: "/",
-    siteName: siteConfig.title,
-    title: siteConfig.title,
-    description: siteConfig.bio,
-    images: [{ url: siteConfig.faviconUrl, width: 1254, height: 1254, alt: `${siteConfig.authorName} 的头像` }],
+    siteName: "Sparink",
+    title: "Sparink — 保持好奇，持续构建",
+    description: "关于 AI、代码与生活的持续实验。",
+    images: [{ url: "/atelier/og.png", width: 1200, height: 630 }],
   },
+  icons: { icon: "/atelier/mark.svg", apple: "/avatar.png" },
   robots: { index: true, follow: true },
-  icons: {
-    icon: siteConfig.faviconUrl,
-    apple: siteConfig.faviconUrl,
-  },
 };
-
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN" className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} h-full antialiased`} suppressHydrationWarning>
-      <head>
-        <style
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-              #app-mount-root { opacity: 0; visibility: hidden; pointer-events: none; }
-              html.splash-seen #app-mount-root { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
-            `
-          }}
-        />
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (sessionStorage.getItem('hasSeenSplash') === 'true') {
-                  document.documentElement.classList.add('splash-seen');
-                }
-              } catch (e) {}
-            `
-          }}
-        />
-      </head>
-
-      <body className="w-screen overflow-x-hidden min-h-full flex flex-col relative transition-colors duration-1000 bg-slate-50 dark:bg-slate-950 font-serif">
+    <html
+      lang="zh-CN"
+      className={`${sans.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
+      <body>
         <ThemeProvider>
-
-          <SplashScreen />
-
           <MusicProvider>
-            <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">
-              <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-                {!siteConfig.useGradient && <BackgroundSlider />}
-                <div className="absolute inset-0 z-[-9] bg-white/30 dark:bg-slate-900/40 backdrop-blur-md transition-colors duration-1000"></div>
-
-                <div
-                  className="absolute inset-0 z-[-8] opacity-60 dark:opacity-20 mix-blend-color transition-opacity duration-1000 transform-gpu"
-                  style={{
-                    background: `linear-gradient(-45deg, ${siteConfig.themeColors.join(', ')})`,
-                    backgroundSize: '400% 400%',
-                    animation: 'gradientMove 15s ease infinite' // 🌟 全端保留渐变流动
-                  }}
-                ></div>
-
-                {/* 👇 🌟 优化：手机端去掉了 mix-blend-overlay，但保留了 blur 模糊光晕，确保视觉不打折 */}
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/40 dark:bg-indigo-900/20 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-400/30 dark:bg-purple-900/30 blur-[100px] rounded-full z-[-7] md:mix-blend-overlay"></div>
-
-                {/* 隐藏手机端高负载粒子特效 */}
-                {siteConfig.features.desktopEffects && (
-                  <div className="hidden md:block absolute inset-0 w-full h-full">
-                    <BackgroundEffects />
-                  </div>
-                )}
-              </div>
-
-              {/* 隐藏手机端弹幕 */}
-              {siteConfig.features.desktopEffects && (
-                <div className="hidden md:block">
-                  <DanmakuBackground />
-                </div>
-              )}
-
-              <div className="relative z-10 flex-1 flex flex-col">
-                {children}
-              </div>
-
-              {siteConfig.features.music && (
-                <div className="hidden md:block">
-                  <FloatingPlayer />
-                </div>
-              )}
-
-              {siteConfig.features.toolbox && (
-                <div className="hidden md:block">
-                  <GlobalToolbox />
-                </div>
-              )}
-
-              <div className="md:hidden block">
-                <MobileBackButton />
-              </div>
-
-              {/* 隐藏手机端点击粒子 */}
-              {siteConfig.features.desktopEffects && (
-                <div className="hidden md:block">
-                  <ClickEffect />
-                </div>
-              )}
-            </div>
-
-            <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
-              @keyframes gradientMove { 
-                0% { background-position: 0% 50%; } 
-                50% { background-position: 100% 50%; } 
-                100% { background-position: 0% 50%; } 
-              }
-            `}} />
+            <AtelierShell>{children}</AtelierShell>
           </MusicProvider>
-
-          {siteConfig.features.aiCat && (
-            <div className="hidden md:block">
-              <CyberCat />
-            </div>
-          )}
-
         </ThemeProvider>
       </body>
     </html>

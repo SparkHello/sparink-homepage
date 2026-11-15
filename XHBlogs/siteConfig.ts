@@ -1,12 +1,12 @@
 // 全站统一配置。个人信息和功能开关优先在这里修改。
 
-import contentSettings from './data/content-settings.json';
-import musicLibrary from './data/music.json';
+import contentSettings from "./data/content-settings.json";
+import musicLibrary from "./data/music.json";
 
 export const siteConfig = {
-  title: "Sparink の 数字花园",
+  title: "Sparink — 保持好奇，持续构建",
   siteUrl: "https://sparink.net",
-  faviconUrl: "/avatar.png",
+  faviconUrl: "/atelier/mark.svg",
   authorName: "Sparink",
   bio: "一个喜欢折腾 AI、代码和硬件的计算机学生。最近沉迷于让一群 AI Agent 学会分工、记忆，以及少烧一点 Token。",
 
