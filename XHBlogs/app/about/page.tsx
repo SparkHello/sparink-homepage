@@ -2,6 +2,7 @@ import Link from "next/link";
 import { albums } from "../../data/albums";
 import { siteConfig } from "../../siteConfig";
 import PhotoLens from "../../components/atelier/PhotoLens";
+import InlineNote from "../../components/atelier/InlineNote";
 
 export const metadata = {
   title: "关于",
@@ -12,6 +13,8 @@ export const metadata = {
 export default function AboutPage() {
   const travel = albums.find((album) => album.id === "travel-2026");
   const photo = travel?.photos.find((item) => item.caption === "路上的云") || travel?.photos[0];
+  const cats = albums.find(album => album.id === "two-cats");
+  const catPhoto = cats?.photos.find(item => item.url === cats.cover) || cats?.photos[0];
   return (
     <main className="personal-wrap personal-about">
       <h1>关于这里</h1>
@@ -20,7 +23,7 @@ export default function AboutPage() {
           <img className="living-avatar" src={siteConfig.avatarUrl} alt="Sparink 的头像" width={64} height={64} />
           <h2>你好，我是 Sparink。</h2>
           <p>这里是我记录生活的地方。几句话、一张照片，或者一段长一点的日记，都可以留下来。</p>
-          <p>喜欢旅行、摄影，也喜欢折腾机械键盘和硬件。糯米和十一是相册里经常出现的两只猫。</p>
+          <p>喜欢旅行、摄影，也喜欢折腾机械键盘和硬件。{catPhoto && cats && siteConfig.features.photoWall ? <InlineNote label="糯米和十一"><img src={catPhoto.thumb || catPhoto.url} alt={catPhoto.caption || "糯米和十一的相册照片"} width={catPhoto.width} height={catPhoto.height} /><Link href={`/photowall/${encodeURIComponent(cats.id)}`} className="inline-note-album-title">{cats.title} ↗</Link></InlineNote> : "糯米和十一"}是相册里经常出现的两只猫。</p>
           <p>希望过一段时间再翻回来，还能想起那些普通日子里的小事。也欢迎你随便看看。</p>
           <div className="about-small-links">
             <Link href="/timeline">日记</Link>

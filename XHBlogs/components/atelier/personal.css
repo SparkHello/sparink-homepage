@@ -6,10 +6,13 @@
 .home-header-inner { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .home-brand { display: flex; gap: 9px; align-items: center; font-size: 23px; font-weight: 600; letter-spacing: -1px; }
 .home-brand svg { width: 20px; height: 20px; color: var(--blue); }
-.home-navigation { display: flex; gap: 34px; font-size: 14px; }
+.home-navigation { position: relative; display: flex; gap: 34px; font-size: 14px; }
 .home-navigation a { position: relative; padding: 12px 0; }
 .home-navigation a:hover, .home-navigation a[aria-current] { color: var(--blue); }
-.home-navigation a[aria-current]::after { content: ""; width: 3px; height: 3px; position: absolute; left: calc(50% - 1px); bottom: 4px; border-radius: 50%; background: var(--blue); }
+.home-nav-indicator { position: absolute; left: 0; bottom: 3px; width: 20px; height: 2px; border-radius: 2px; background: var(--blue); pointer-events: none; view-transition-name: site-nav-indicator; transition: transform .42s cubic-bezier(.22,.85,.25,1.15), opacity .18s; }
+::view-transition-group(site-nav-indicator) { animation-duration: 420ms; animation-timing-function: cubic-bezier(.22,.85,.25,1.1); z-index: 11; }
+::view-transition-old(site-nav-indicator) { display: none; }
+::view-transition-new(site-nav-indicator) { animation: none; }
 .home-footer { margin-top: 70px; }
 .home-footer-inner { border-top: 1px solid var(--line); padding: 27px 0 32px; display: flex; justify-content: space-between; align-items: center; gap: 24px; color: var(--muted); font-size: 12px; }
 .home-footer-inner > div { display: flex; align-items: center; gap: 25px; }
@@ -121,5 +124,5 @@
   .home-footer-inner { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .home-photo-stack img { transition: none; }
+  .home-photo-stack img, .home-nav-indicator { transition: none; }
 }

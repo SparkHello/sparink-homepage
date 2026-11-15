@@ -1,11 +1,11 @@
 'use client';
 import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import type { DiaryEntryData } from '../../lib/diary';
 import { groupDiaryEntries } from '../../lib/diary-groups';
 import DiaryEntry from './DiaryEntry';
 import MonthWheel from './MonthWheel';
+import JournalSearch from './JournalSearch';
 import './diary.css';
 export type JournalEntry = DiaryEntryData;
 export default function Journal({ entries, variant = 'journal' }: { entries: DiaryEntryData[]; variant?: 'journal' | 'chatter' | 'moments' }) {
@@ -19,7 +19,7 @@ export default function Journal({ entries, variant = 'journal' }: { entries: Dia
   return <main className="diary-archive">
     <header className="diary-header"><h1>{variant === 'chatter' ? '随手记' : variant === 'moments' ? '日常' : '日记'}</h1><p>{variant === 'journal' ? '按时间，翻一翻过去的日子。' : '一些随手写下的小事。'}</p></header>
     {entries.length > 0 && <div className="diary-tools">
-      <label className="diary-search"><Search size={16} aria-hidden="true"/><input type="search" aria-label="搜索日记全文" placeholder="在日记里找一找…" value={query} onChange={event => setQuery(event.target.value)}/></label>
+      <JournalSearch query={query} onQueryChange={setQuery} resultCount={results.length}/>
       <MonthWheel periods={periods} year={year} month={month} onChange={(nextYear, nextMonth) => { setYear(nextYear); setMonth(nextMonth); }}/>
       {filtered && <button className="diary-clear" onClick={() => { setQuery(''); setYear(''); setMonth(''); }}>清除筛选</button>}
     </div>}

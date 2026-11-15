@@ -52,6 +52,8 @@ interface MusicContextType {
   currentIndex: number;
   currentSong: any; // 扩展了 lyrics 属性
   isPlaying: boolean;
+  isBuffering: boolean;
+  playbackError: string;
   progress: number;
   currentTime: number;
   duration: number;
@@ -85,6 +87,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackError, setPlaybackError] = useState("");
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -100,6 +104,39 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [playMode, setPlayMode] = useState<PlayMode>("loop");
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Playback intent is separate from the audio element's actual playing state.
+  const wantsToPlay = useRef(false);
+  const playAttempt = useRef(0);
+
+  function requestPlay(audio: HTMLAudioElement) {
+    const attempt = ++playAttempt.current;
+    wantsToPlay.current = true;
+    setPlaybackError("");
+    setIsBuffering(true);
+    if (audio.error) audio.load();
+    audio.play().then(() => {
+      if (attempt !== playAttempt.current || !wantsToPlay.current || audio.paused || audio.readyState < 3) return;
+      setIsPlaying(true);
+      setIsBuffering(false);
+      setPlaybackError("");
+    }).catch((error: unknown) => {
+      if (attempt !== playAttempt.current) return;
+      wantsToPlay.current = false;
+      setIsPlaying(false);
+      setIsBuffering(false);
+      setPlaybackError(error instanceof DOMException && error.name === "NotAllowedError"
+        ? "浏览器暂停了播放，请再点一下播放。"
+        : "这首歌暂时无法播放，可以重试或换一首。");
+    });
+  }
+
+  function pausePlayback() {
+    wantsToPlay.current = false;
+    playAttempt.current += 1;
+    audioRef.current?.pause();
+    setIsPlaying(false);
+    setIsBuffering(false);
+  }
 
   useEffect(() => {
     if (!musicRequested) return;
@@ -236,16 +273,18 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         });
     }
 
-    if (isPlaying && audioRef.current) {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => setIsPlaying(false));
-      }
-    }
+    playAttempt.current += 1;
+    setIsPlaying(false);
+    setIsBuffering(false);
+    setPlaybackError("");
+    setCurrentTime(0);
+    setDuration(0);
+    setProgress(0);
+    if (wantsToPlay.current && audioRef.current) requestPlay(audioRef.current);
     return () => {
       isMounted = false;
     };
-  }, [currentIndex, playlist.length]); // 移除 playlist 依赖防止无限循环，只依赖长度
+  }, [currentIndex, playlist.length, playlist[currentIndex]?.src]);
 
   // 🌟 4. 同步音量到 audio 元素
   useEffect(() => {
@@ -256,33 +295,50 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   const togglePlay = () => {
     if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause();
-      else audioRef.current.play().catch(() => setIsPlaying(false));
-      setIsPlaying(!isPlaying);
+      if (wantsToPlay.current) pausePlayback();
+      else requestPlay(audioRef.current);
     }
+  };
+
+  const changeSong = (index: number, play = wantsToPlay.current) => {
+    if (!playlist[index]) return;
+    wantsToPlay.current = play;
+    playAttempt.current += 1;
+    setPlaybackError("");
+    if (index === currentIndex && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      setCurrentTime(0);
+      setProgress(0);
+      if (play) requestPlay(audioRef.current);
+      return;
+    }
+    setIsPlaying(false);
+    setIsBuffering(play);
+    setCurrentIndex(index);
   };
 
   // 🌟 5. 重写 nextSong，加入对随机模式的处理
   const nextSong = () => {
+    if (!playlist.length) return;
     if (playMode === "random") {
-      setCurrentIndex(Math.floor(Math.random() * playlist.length));
+      changeSong(Math.floor(Math.random() * playlist.length));
     } else {
-      setCurrentIndex((prev) => (prev + 1) % playlist.length);
+      changeSong((currentIndex + 1) % playlist.length);
     }
   };
 
   const prevSong = () => {
+    if (!playlist.length) return;
     if (playMode === "random") {
-      setCurrentIndex(Math.floor(Math.random() * playlist.length));
+      changeSong(Math.floor(Math.random() * playlist.length));
     } else {
-      setCurrentIndex((prev) => (prev - 1 + playlist.length) % playlist.length);
+      changeSong((currentIndex - 1 + playlist.length) % playlist.length);
     }
   };
 
   // 🌟 6. 暴露直接播放指定歌曲的方法
   const playSong = (index: number) => {
-    setCurrentIndex(index);
-    if (!isPlaying) setIsPlaying(true); // 保证切歌后自动播放
+    changeSong(index, true);
   };
 
   const handleTimeUpdate = () => {
@@ -306,9 +362,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   // 🌟 7. 处理歌曲结束
   const handleEnded = () => {
+    setIsPlaying(false);
+    setIsBuffering(false);
     if (playMode === "single" && audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play();
+      requestPlay(audioRef.current);
     } else {
       nextSong();
     }
@@ -338,7 +396,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const retryMusic = () => setRetryKey((value) => value + 1);
+  const retryMusic = () => {
+    pausePlayback();
+    setPlaybackError("");
+    setRetryKey((value) => value + 1);
+  };
 
   const currentSong = playlist[currentIndex];
 
@@ -349,6 +411,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         currentIndex,
         currentSong,
         isPlaying,
+        isBuffering,
+        playbackError,
         progress,
         currentTime,
         duration,
@@ -374,6 +438,34 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         <audio
           ref={audioRef}
           src={currentSong.src}
+          preload="metadata"
+          onPlaying={() => {
+            if (!wantsToPlay.current) { audioRef.current?.pause(); return; }
+            setIsPlaying(true);
+            setIsBuffering(false);
+            setPlaybackError("");
+          }}
+          onPause={(event) => {
+            const audio = event.currentTarget;
+            if (!audio.paused) return;
+            // A source replacement also pauses the element. Keep that pending
+            // track's intent, but respect a native/browser pause of this track.
+            if (!audio.ended && audio.readyState > 0 && audio.currentSrc === new URL(currentSong.src, window.location.href).href) {
+              wantsToPlay.current = false;
+            }
+            setIsPlaying(false);
+            setIsBuffering(false);
+          }}
+          onWaiting={() => {
+            if (wantsToPlay.current) { setIsPlaying(false); setIsBuffering(true); }
+          }}
+          onError={() => {
+            wantsToPlay.current = false;
+            playAttempt.current += 1;
+            setIsPlaying(false);
+            setIsBuffering(false);
+            setPlaybackError("这首歌暂时无法播放，可以重试或换一首。");
+          }}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded} // 使用我们重写的结束处理
           onLoadedMetadata={handleTimeUpdate}

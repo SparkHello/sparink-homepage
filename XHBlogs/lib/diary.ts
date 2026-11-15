@@ -101,12 +101,15 @@ export async function parseDiaryEntry(source: string, collection: DiaryCollectio
   const seenImages = new Set<string>();
   let fullText = '';
   const ids = new Map<string, number>();
+  const notePrefix = `note-${collection}-${Array.from(slug, char => char.codePointAt(0)!.toString(16)).join('_')}-`;
   function structure() {
     return (tree: Root) => {
       function walk(parent: Root | Element) {
         for (const node of parent.children) {
           if (node.type !== 'element') continue;
-          if (/^h[1-6]$/.test(node.tagName)) {
+          const footnoteLabel = node.properties.id === 'footnote-label';
+          if (footnoteLabel) node.properties.id = `${notePrefix}label`;
+          if (/^h[1-6]$/.test(node.tagName) && !footnoteLabel) {
             const text = nodeText(node);
             const base = text.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, '').trim().replace(/\s+/g, '-') || 'section';
             const count = ids.get(base) || 0; ids.set(base, count + 1);
@@ -115,6 +118,7 @@ export async function parseDiaryEntry(source: string, collection: DiaryCollectio
             if (Number(node.tagName[1]) <= 3) headings.push({ id, text, level: Number(node.tagName[1]) });
           }
           if (node.tagName === 'a') {
+            if (Array.isArray(node.properties.ariaDescribedBy)) node.properties.ariaDescribedBy = node.properties.ariaDescribedBy.map(value => value === 'footnote-label' ? `${notePrefix}label` : value);
             const safe = safeDiaryUrl(node.properties.href);
             if (!safe) delete node.properties.href;
             else {
@@ -140,7 +144,7 @@ export async function parseDiaryEntry(source: string, collection: DiaryCollectio
     };
   }
   const html = String(await unified().use(remarkParse).use(remarkGfm).use(remarkMath)
-    .use(remarkRehype).use(structure)
+    .use(remarkRehype, { clobberPrefix: notePrefix, footnoteLabel: '补充', footnoteBackLabel: '回到正文' }).use(structure)
     .use(rehypeHighlight, { detect: false, ignoreMissing: true })
     .use(rehypeKatex, { strict: 'ignore', trust: false }).use(rehypeStringify).process(content));
   const images: DiaryImage[] = [];

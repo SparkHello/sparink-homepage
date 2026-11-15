@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { DiaryEntryData } from '../../lib/diary';
+import DiaryProse from './DiaryProse';
 import './article.css';
 import './diary.css';
 
@@ -17,7 +18,7 @@ export default function DiaryEntry({ entry, expanded = false, showDate = true, d
     </div>}
     {entry.title && <Heading className="diary-entry-title">{detail ? entry.title : <Link href={entry.href}>{entry.title}</Link>}</Heading>}
     {entry.cover && <figure className="diary-entry-cover"><a href={entry.cover} target="_blank" rel="noreferrer"><img src={entry.cover} alt={entry.title || '日记中的照片'} loading="lazy" /></a></figure>}
-    {excerptOnly ? <p className="diary-excerpt">{entry.excerpt}</p> : <div className="article-prose diary-prose" dangerouslySetInnerHTML={{ __html: entry.html }} />}
+    {excerptOnly ? <p className="diary-excerpt">{entry.excerpt}</p> : <DiaryProse key={entry.id} html={entry.html} />}
     {!entry.html && entry.description && <p className="diary-excerpt">{entry.description}</p>}
     {images.length > 0 && <div className={`diary-entry-images${images.length > 1 ? ' diary-entry-images-multiple' : ''}`}>{images.map((image, index) => <figure key={`${image.url}-${index}`}><a href={image.url} target="_blank" rel="noreferrer"><img src={image.url} alt={image.caption || `日记中的照片 ${index + 1}`} loading="lazy" /></a>{image.caption && <figcaption>{image.caption}</figcaption>}</figure>)}</div>}
     {excerptOnly && <Link href={entry.href} className="diary-read-more">继续阅读 <span aria-hidden="true">→</span></Link>}

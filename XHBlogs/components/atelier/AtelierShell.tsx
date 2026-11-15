@@ -1,16 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ArrowUp } from "lucide-react";
 import { siteConfig } from "../../siteConfig";
 import { AlbumNavigationProvider } from "./AlbumNavigation";
-
-const links = [
-  { href: "/timeline", label: "日记" },
-  { href: "/photowall", label: "相册" },
-  { href: "/about", label: "关于" },
-].filter((link) => link.href !== "/photowall" || siteConfig.features.photoWall);
+import SiteNavigation from "./SiteNavigation";
 
 export function Mark() {
   return (
@@ -22,11 +16,6 @@ export function Mark() {
 }
 
 export default function AtelierShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const active = (href: string) => href === "/timeline"
-    ? ["/timeline", "/posts", "/chatter", "/moments"].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
-    : pathname === href || pathname.startsWith(`${href}/`);
-
   return (
     <AlbumNavigationProvider><div className="personal-site">
       <a className="skip-link" href="#main-content">跳转到内容</a>
@@ -35,9 +24,7 @@ export default function AtelierShell({ children }: { children: React.ReactNode }
           <Link className="home-brand" href="/" aria-label="Sparink 首页">
             <Mark /><span>sparink<span className="brand-period">.</span></span>
           </Link>
-          <nav className="home-navigation" aria-label="主导航">
-            {links.map((link) => <Link key={link.href} href={link.href} aria-current={active(link.href) ? "page" : undefined}>{link.label}</Link>)}
-          </nav>
+          <SiteNavigation />
         </div>
       </header>
       <div id="main-content" tabIndex={-1}>{children}</div>

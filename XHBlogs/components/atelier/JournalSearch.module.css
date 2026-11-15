@@ -1,0 +1,75 @@
+.root {
+  position: relative;
+  width: 104px;
+  max-width: 100%;
+  height: 44px;
+  flex: 0 1 auto;
+  border: 1px solid var(--line);
+  border-radius: 23px;
+  color: var(--muted);
+  background: transparent;
+  transition: width 420ms cubic-bezier(.22,.8,.22,1), border-radius 420ms cubic-bezier(.22,.8,.22,1), border-color 180ms, background-color 220ms;
+}
+.root[data-open=true] {
+  width: min(360px, 100%);
+  border-radius: 9px;
+  background: #fffef94d;
+}
+.root:focus-within { border-color: var(--blue); }
+.icon { position: absolute; top: 13px; left: 14px; pointer-events: none; transition: color 180ms; }
+.root:focus-within .icon { color: var(--blue); }
+.trigger {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: 44px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  padding: 0 14px 0 40px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 130ms 180ms, visibility 0s;
+}
+.trigger:hover { color: var(--ink); }
+.root[data-open=true] .trigger { opacity: 0; visibility: hidden; transition: opacity 100ms, visibility 0s 100ms; }
+.field {
+  position: absolute;
+  inset: 0;
+  padding-left: 40px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-5px);
+  transition: opacity 110ms, transform 180ms, visibility 0s 180ms;
+}
+.root[data-open=true] .field { opacity: 1; visibility: visible; transform: translateX(0); transition: opacity 180ms 90ms, transform 280ms 70ms, visibility 0s; }
+.field input {
+  min-width: 0;
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  padding: 11px 0;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.field input::placeholder { color: var(--muted); }
+.field input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.action { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
+.action:hover { color: var(--blue); }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media(max-width:760px) {
+  .root[data-open=true] { width: 100%; }
+  .field input { font-size: 16px; }
+}
+@media(pointer:coarse) { .action { min-width: 44px; min-height: 44px; } }
+@media(prefers-reduced-motion:reduce) { .root, .icon, .trigger, .field, .root[data-open=true] .trigger, .root[data-open=true] .field { transition: none; } }

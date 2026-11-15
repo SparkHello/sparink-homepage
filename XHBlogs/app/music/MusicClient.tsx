@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Play,
   Pause,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMusic } from "../../components/MusicProvider";
 import "../../components/atelier/extras.css";
+import "./music-envelope.css";
 
 function time(value: number) {
   return Number.isFinite(value) && value > 0
@@ -28,6 +29,18 @@ export default function MusicClient() {
   const music = useMusic();
   const [query, setQuery] = useState("");
   const [coverFailed, setCoverFailed] = useState("");
+  const envelope = useRef<HTMLButtonElement>(null);
+  const [canAnimate, setCanAnimate] = useState(false);
+  useEffect(() => {
+    const element = envelope.current;
+    if (!element) return;
+    let inView = false;
+    const update = () => setCanAnimate(inView && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; update(); });
+    observer.observe(element);
+    document.addEventListener("visibilitychange", update);
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", update); };
+  }, []);
   const tracks = useMemo(
     () =>
       music.playlist
@@ -41,6 +54,11 @@ export default function MusicClient() {
   );
   const song = music.currentSong;
   const cover = song?.cover || song?.pic;
+  const title = song?.title || song?.name;
+  const artist = song?.artist || song?.author;
+  const hasPlayback = music.isPlaying || music.isBuffering;
+  const extracted = hasPlayback || music.currentTime > 0;
+  const playbackLabel = music.isBuffering ? "取消加载" : music.isPlaying ? "暂停" : music.playbackError ? "重试播放" : "播放";
   const mode = { loop: "列表循环", single: "单曲循环", random: "随机播放" }[
     music.playMode
   ];
@@ -58,39 +76,46 @@ export default function MusicClient() {
       </header>
       <div className="listening-layout">
         <div className="record-player">
-          <div className={`record-art ${music.isPlaying ? "is-playing" : ""}`}>
-            <div className="record-rings" />
-            <div className="record-label">
-              {cover && coverFailed !== cover ? (
-                <img
-                  src={cover}
-                  alt={song?.title || song?.name || "唱片封面"}
-                  onError={() => setCoverFailed(cover)}
-                />
-              ) : (
-                <span>
-                  SP
-                  <br />
-                  IN.
-                </span>
-              )}
-            </div>
-            <span className="record-center" />
-          </div>
+          <button
+            ref={envelope}
+            type="button"
+            className={`music-envelope ${extracted ? "is-extracted" : ""} ${music.isPlaying && canAnimate ? "is-turning" : ""}`}
+            onClick={music.togglePlay}
+            disabled={!song || music.isLoading}
+            aria-label={song ? `${playbackLabel} ${title || "当前歌曲"}` : "等待歌单"}
+            aria-pressed={music.isPlaying}
+            aria-describedby="music-playback-state"
+          >
+            <span className="music-disc-slide" aria-hidden="true">
+              <span className="music-disc">
+                <span className="music-disc-label">{cover && coverFailed !== cover ? <img src={cover} alt="" draggable={false} onError={() => setCoverFailed(cover)} /> : <span>S.</span>}</span>
+                <span className="music-disc-hub" />
+              </span>
+            </span>
+            <span className="music-paper-sleeve" aria-hidden="true">
+              <span className="music-paper-title">听听歌</span>
+              <span className="music-paper-subtitle">留一点音乐在这里。</span>
+              <span className="music-paper-signature">S.</span>
+              <span className="music-paper-action">{music.isLoading ? "正在连接…" : !song ? "等一会儿" : music.isBuffering ? "正在缓冲…" : music.isPlaying ? "轻点暂停" : music.currentTime > 0 ? "继续听" : "轻点播放"}</span>
+            </span>
+          </button>
           <div className="record-description">
-            <span className="extra-mono">
+            <span className="extra-mono" id="music-playback-state" role="status">
               {music.isLoading
                 ? "正在连接"
+                : music.playbackError
+                  ? "暂时无法播放"
+                  : music.isBuffering
+                    ? "正在缓冲"
                 : music.isPlaying
                   ? "正在播放"
-                  : "点一下播放"}
+                  : music.currentTime > 0 ? "已暂停" : song ? "点一下播放" : "暂时无法连接"}
             </span>
             <h2>
-              {song?.title ||
-                song?.name ||
+              {title ||
                 (music.isLoading ? "正在载入歌单…" : "歌单暂时不可用")}
             </h2>
-            <p>{song?.artist || song?.author || "我的歌单"}</p>
+            <p>{artist || "我的歌单"}</p>
           </div>
           {song && (
             <>
@@ -102,6 +127,7 @@ export default function MusicClient() {
                   max="100"
                   step="0.1"
                   value={Number.isFinite(music.progress) ? music.progress : 0}
+                  disabled={!music.duration || !Number.isFinite(music.duration)}
                   onChange={music.handleSeek}
                 />
                 <span>{time(music.currentTime)}</span>
@@ -127,9 +153,9 @@ export default function MusicClient() {
                   type="button"
                   className="record-play"
                   onClick={music.togglePlay}
-                  aria-label={music.isPlaying ? "暂停" : "播放"}
+                  aria-label={playbackLabel}
                 >
-                  {music.isPlaying ? <Pause size={23} /> : <Play size={23} />}
+                  {hasPlayback ? <Pause size={23} /> : <Play size={23} />}
                 </button>
                 <button
                   type="button"
@@ -167,6 +193,7 @@ export default function MusicClient() {
               <p className="record-lyric" aria-live="off">
                 {music.currentLyric}
               </p>
+              {music.playbackError && <div className="record-error music-playback-error" role="status"><p>{music.playbackError}</p><button type="button" className="text-link" onClick={music.togglePlay}><RefreshCw size={14} />重试播放</button></div>}
             </>
           )}
           {!song && (
@@ -217,15 +244,11 @@ export default function MusicClient() {
                       ? music.togglePlay()
                       : music.playSong(index)
                   }
-                  aria-label={`${index === music.currentIndex && music.isPlaying ? "暂停" : "播放"} ${track.title || track.name}`}
+                  aria-label={`${index === music.currentIndex ? playbackLabel : "播放"} ${track.title || track.name}`}
                 >
                   <span className="track-number extra-mono">
                     {index === music.currentIndex && music.isPlaying ? (
-                      <span className="equalizer" aria-hidden="true">
-                        <i />
-                        <i />
-                        <i />
-                      </span>
+                      <Volume2 size={15} aria-hidden="true" />
                     ) : (
                       String(index + 1).padStart(2, "0")
                     )}
@@ -235,7 +258,7 @@ export default function MusicClient() {
                     <span>{track.artist || track.author || "未知艺术家"}</span>
                   </span>
                   <span className="track-action">
-                    {index === music.currentIndex && music.isPlaying ? (
+                    {index === music.currentIndex && hasPlayback ? (
                       <Pause size={17} />
                     ) : (
                       <Play size={17} />
