@@ -17,19 +17,11 @@ export default function HeroArt() {
   const [variant, setVariant] = useState<"orbit" | "flow">("orbit");
   return (
     <div className="hero-art">
-      <div className="art-cross cross-one">+</div>
-      <div className="art-cross cross-two">+</div>
-      <div className="art-index eyebrow">
-        FIG. 001 /{" "}
-        {variant === "orbit" ? "CONNECTED THOUGHTS" : "A DIFFERENT PERSPECTIVE"}
-      </div>
       <div className="sculpture-stage">
         <Sculpture paused={paused} variant={variant} />
       </div>
       <div className="art-bottom">
-        <span className="eyebrow">
-          思绪有形，探索无界。<small>DRAG TO EXPLORE</small>
-        </span>
+        <span className="art-hint">拖一拖，让它转个身。</span>
         <div className="art-controls">
           <button
             onClick={() => setVariant(variant === "orbit" ? "flow" : "orbit")}
@@ -40,6 +32,7 @@ export default function HeroArt() {
           <button
             onClick={() => setPaused(!paused)}
             aria-label={paused ? "继续动画" : "暂停动画"}
+            aria-pressed={paused}
           >
             {paused ? <Play size={14} /> : <Pause size={14} />}
           </button>

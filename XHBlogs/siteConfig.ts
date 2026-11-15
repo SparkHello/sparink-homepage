@@ -4,11 +4,11 @@ import contentSettings from "./data/content-settings.json";
 import musicLibrary from "./data/music.json";
 
 export const siteConfig = {
-  title: "Sparink — 保持好奇，持续构建",
+  title: "Sparink · 日记与相册",
   siteUrl: "https://sparink.net",
   faviconUrl: "/atelier/mark.svg",
   authorName: "Sparink",
-  bio: "一个喜欢折腾 AI、代码和硬件的计算机学生。最近沉迷于让一群 AI Agent 学会分工、记忆，以及少烧一点 Token。",
+  bio: "在这里写日记、放照片，留住一些普通的日子。",
 
   navTitle: "Sparink",
   navSuffix: "の",
@@ -38,8 +38,8 @@ export const siteConfig = {
   },
 
   counts: { photos: 0 },
-  chatterTitle: "灵感碎片",
-  chatterDescription: "AI、代码、硬件与生活里的未完成想法",
+  chatterTitle: "日常碎片",
+  chatterDescription: "日常里随手写下的几句话。",
   danmakuList: [
     "Agent 正在分工……",
     "Memory recall hit",

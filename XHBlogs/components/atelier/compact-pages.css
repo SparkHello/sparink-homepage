@@ -1,0 +1,49 @@
+/* Small, ordinary headings for the site's side rooms. */
+.quiet-page {
+  max-width: 1120px;
+  padding-top: 62px;
+  padding-bottom: 90px;
+  padding-inline: 40px;
+}
+.quiet-page .extra-heading {
+  max-width: 680px;
+  margin: 0 0 44px;
+}
+.quiet-page .extra-heading h1 {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 450;
+  letter-spacing: -.04em;
+  line-height: 1.4;
+}
+.quiet-page .extra-heading > p {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: #85867d;
+  line-height: 1.85;
+}
+.quiet-page .record-description > .extra-mono {
+  font-size: 10px;
+  letter-spacing: .03em;
+}
+.quiet-page .track-heading h2 { font-size: 21px; font-weight: 450; }
+.quiet-friends .extra-empty {
+  min-height: 180px;
+  padding: 20px 0 38px;
+}
+.quiet-friends .extra-empty p {
+  font-size: 14px;
+  max-width: 500px;
+  margin-bottom: 22px;
+}
+.quiet-friends .extra-back { font-size: 12px; }
+.quiet-not-found { min-height: 54vh; }
+.quiet-not-found .text-link { font-size: 13px; }
+@media (max-width: 760px) {
+  .quiet-page { padding: 42px 24px 65px; }
+  .quiet-page .extra-heading { margin-bottom: 33px; }
+  .quiet-page .extra-heading h1 { font-size: 30px; }
+  .quiet-page .extra-heading > p { font-size: 12px; margin-top: 12px; }
+  .quiet-friends .extra-empty { min-height: 150px; padding-top: 12px; }
+  .quiet-friends .extra-empty p { font-size: 13px; }
+}

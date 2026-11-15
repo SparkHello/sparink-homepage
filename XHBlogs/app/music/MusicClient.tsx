@@ -51,15 +51,10 @@ export default function MusicClient() {
         ? Repeat1
         : Repeat;
   return (
-    <section className="page-wrap extra-page listening-page">
+    <main className="page-wrap extra-page listening-page quiet-page">
       <header className="extra-heading">
-        <span className="eyebrow">ON REPEAT / 我的背景音</span>
-        <h1>
-          留一只耳朵，
-          <br />
-          <em>听听生活。</em>
-        </h1>
-        <p>写代码、放空，或什么都不做。一些愿意反复听的声音。</p>
+        <h1>听听歌</h1>
+        <p>一些喜欢听的歌。</p>
       </header>
       <div className="listening-layout">
         <div className="record-player">
@@ -85,17 +80,17 @@ export default function MusicClient() {
           <div className="record-description">
             <span className="extra-mono">
               {music.isLoading
-                ? "CONNECTING"
+                ? "正在连接"
                 : music.isPlaying
-                  ? "NOW PLAYING"
-                  : "READY WHEN YOU ARE"}
+                  ? "正在播放"
+                  : "点一下播放"}
             </span>
             <h2>
               {song?.title ||
                 song?.name ||
-                (music.isLoading ? "正在载入歌单…" : "让音乐稍等片刻")}
+                (music.isLoading ? "正在载入歌单…" : "歌单暂时不可用")}
             </h2>
-            <p>{song?.artist || song?.author || "Sparink’s listening room"}</p>
+            <p>{song?.artist || song?.author || "我的歌单"}</p>
           </div>
           {song && (
             <>
@@ -196,11 +191,9 @@ export default function MusicClient() {
         </div>
         <div className="track-panel">
           <div className="track-heading">
-            <h2>
-              Listening shelf<span> / 歌单</span>
-            </h2>
+            <h2>歌单</h2>
             <span className="extra-mono">
-              {String(music.playlist.length).padStart(2, "0")}
+              {music.playlist.length} 首
             </span>
           </div>
           <label className="journal-search">
@@ -257,7 +250,7 @@ export default function MusicClient() {
                 {query
                   ? "没有找到这首歌。"
                   : music.isLoading
-                    ? "歌单正在路上…"
+                    ? "正在载入歌单…"
                     : "暂时无法读取歌单。"}
               </p>
               {query && (
@@ -267,16 +260,8 @@ export default function MusicClient() {
               )}
             </div>
           )}
-          <div className="listening-note">
-            <span className="extra-mono">A SMALL PAUSE.</span>
-            <p>
-              偶尔把注意力从屏幕移开，
-              <br />
-              让一首歌完整地播放。
-            </p>
-          </div>
         </div>
       </div>
-    </section>
+    </main>
   );
 }

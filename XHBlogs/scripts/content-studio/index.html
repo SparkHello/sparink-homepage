@@ -15,9 +15,9 @@
         <div><strong>Sparink Studio</strong><span>LOCAL CONTENT DESK</span></div>
       </div>
       <nav class="nav" aria-label="控制台导航">
-        <button class="nav-item active" data-view="overview"><span>⌂</span>概览</button>
-        <button class="nav-item" data-view="writing"><span>✎</span>文章与日记</button>
-        <button class="nav-item" data-view="moments"><span>✦</span>动态</button>
+        <button class="nav-item" data-view="overview"><span>⌂</span>概览</button>
+        <button class="nav-item active" data-view="writing"><span>✎</span>写日记</button>
+        <button class="nav-item" data-view="moments"><span>✦</span>随手记</button>
         <button class="nav-item" data-view="albums"><span>▧</span>照片与相册</button>
         <button class="nav-item" data-view="music"><span>♫</span>音乐</button>
         <button class="nav-item publish-nav" data-view="publish"><span>↑</span>检查与发布</button>
@@ -27,7 +27,7 @@
 
     <main class="workspace">
       <header class="topbar">
-        <div><p class="eyebrow">SPARINK / CONTENT</p><h1 id="page-title">内容概览</h1></div>
+        <div><p class="eyebrow">SPARINK / CONTENT</p><h1 id="page-title">写日记</h1></div>
         <div class="top-actions">
           <span id="save-indicator" class="status-pill muted">数据已载入</span>
           <button id="refresh-button" class="button ghost">刷新</button>
@@ -35,9 +35,9 @@
         </div>
       </header>
 
-      <section class="view active" data-view-panel="overview">
+      <section class="view" data-view-panel="overview">
         <div class="hero-card">
-          <div><p class="eyebrow">A QUIET PLACE TO BUILD</p><h2>先在本地整理，满意后再推向云端。</h2><p>内容直接写入仓库，图片自动压缩为 WebP；发布前会完整构建并检查。</p></div>
+          <div><p class="eyebrow">A QUIET PLACE TO BUILD</p><h2>记两句话，留一张照片。</h2><p>日记可以没有标题。写下今天想留下的片刻，保存后先看一看，再发布。</p></div>
           <button class="button light" data-go="writing">开始写点什么</button>
         </div>
         <div id="stat-grid" class="stat-grid"></div>
@@ -58,28 +58,30 @@
         </div>
       </section>
 
-      <section class="view" data-view-panel="writing">
+      <section class="view active" data-view-panel="writing">
         <div class="editor-layout">
           <aside class="record-panel panel">
             <div class="record-toolbar">
-              <div class="segmented"><button class="active" data-writing-kind="posts">文章</button><button data-writing-kind="chatters">日记 / 杂谈</button></div>
+              <div class="segmented"><button class="active" data-writing-kind="chatters">日记</button><button data-writing-kind="posts">长文章</button></div>
               <button id="new-writing" class="icon-button" title="新建">＋</button>
             </div>
-            <label class="search"><span>⌕</span><input id="writing-search" placeholder="搜索标题或标签"></label>
+            <label class="search"><span>⌕</span><input id="writing-search" placeholder="搜索日记内容"></label>
             <div id="writing-list" class="record-list"></div>
           </aside>
           <form id="writing-form" class="panel editor-form">
-            <div class="section-head"><div><p class="eyebrow" id="writing-eyebrow">NEW POST</p><h2 id="writing-heading">新文章</h2></div><button id="delete-writing" type="button" class="button danger hidden">移到废纸篓</button></div>
+            <div class="section-head"><div><p class="eyebrow" id="writing-eyebrow">TODAY’S NOTE</p><h2 id="writing-heading">今天，想记点什么？</h2></div><button id="delete-writing" type="button" class="button danger hidden">移到废纸篓</button></div>
             <input type="hidden" name="originalSlug">
-            <div class="form-grid two"><label>标题<input name="title" required placeholder="给这篇内容一个标题"></label><label>文件标识<input name="slug" required placeholder="例如 agent-memory"></label></div>
-            <div class="form-grid two"><label>日期<input name="date" type="date"></label><label id="mood-field" class="hidden">心情<input name="mood" placeholder="平静 / 兴奋 / 忙碌"></label><label id="tags-field">标签<input name="tags" placeholder="AI, Agent, 随笔"></label></div>
-            <label>摘要<textarea name="description" rows="2" placeholder="列表页会显示这段简介"></textarea></label>
-            <div class="cover-field">
-              <label>封面地址<input name="cover" placeholder="上传图片，或粘贴 HTTPS 地址"></label>
-              <label class="upload-button">上传封面<input id="writing-cover-upload" type="file" accept="image/*,.heic,.heif" hidden></label>
-              <div id="writing-cover-preview" class="mini-preview empty">暂无封面</div>
-            </div>
-            <label class="content-field">正文（Markdown）<textarea name="content" rows="18" placeholder="# 从这里开始写……"></textarea></label>
+            <label class="diary-title">标题 <span class="optional-note">可不填</span><input name="title" placeholder="不必想好标题，直接写正文也可以"></label>
+            <label class="content-field">今天的日记<textarea name="content" rows="12" placeholder="今天发生了一件小事……&#10;&#10;两句话也好，一张照片也好。"></textarea></label>
+            <div class="body-upload-toolbar"><button type="button" id="insert-body-image" class="button ghost">＋ 添加照片</button><input id="writing-body-upload" type="file" accept="image/*,.heic,.heif" multiple hidden><span id="body-upload-status" role="status">照片会插在光标处，无需填写说明。</span></div>
+            <div id="writing-attachments" class="writing-attachments" aria-label="正文里的照片"></div>
+            <details class="optional-fields" id="writing-options"><summary>日期与其他选项 <span>平常可以不填</span></summary>
+              <div class="form-grid two"><label>日期<input name="date" type="date"></label><label id="mood-field">心情<input name="mood" placeholder="可留空"></label></div>
+              <label>文件标识<input name="slug" placeholder="自动生成，编辑时保持原记录"></label>
+              <label id="tags-field">标签<input name="tags" placeholder="可留空，用逗号分隔"></label>
+              <label>摘要<textarea name="description" rows="2" placeholder="可留空"></textarea></label>
+              <div class="cover-field"><label>单独设置封面<input name="cover" placeholder="可留空，正文里的照片也会正常展示"></label><label class="upload-button">上传封面<input id="writing-cover-upload" type="file" accept="image/*,.heic,.heif" hidden></label><div id="writing-cover-preview" class="mini-preview empty">暂无封面</div></div>
+            </details>
             <div class="form-actions"><span class="form-hint">保存后立即进入本地预览；不会自动推送。</span><button class="button primary" type="submit">保存到本地</button></div>
           </form>
         </div>
@@ -88,17 +90,16 @@
       <section class="view" data-view-panel="moments">
         <div class="editor-layout">
           <aside class="record-panel panel">
-            <div class="record-toolbar"><div><p class="eyebrow">MOMENTS</p><strong>动态列表</strong></div><button id="new-moment" class="icon-button">＋</button></div>
+            <div class="record-toolbar"><div><p class="eyebrow">MOMENTS</p><strong>随手记</strong></div><button id="new-moment" class="icon-button">＋</button></div>
             <div id="moment-list" class="record-list"></div>
           </aside>
           <form id="moment-form" class="panel editor-form">
-            <div class="section-head"><div><p class="eyebrow">NEW MOMENT</p><h2 id="moment-heading">新动态</h2></div><button id="delete-moment" type="button" class="button danger hidden">移到废纸篓</button></div>
+            <div class="section-head"><div><p class="eyebrow">NEW MOMENT</p><h2 id="moment-heading">记一个小片刻</h2></div><button id="delete-moment" type="button" class="button danger hidden">移到废纸篓</button></div>
             <input type="hidden" name="originalSlug">
-            <div class="form-grid two"><label>文件标识<input name="slug" required placeholder="例如 summer-night"></label><label>日期<input name="date" type="date"></label></div>
-            <label>地点<input name="location" placeholder="可留空"></label>
+            <details class="optional-fields"><summary>日期与其他选项 <span>默认今天</span></summary><div class="form-grid two"><label>日期<input name="date" type="date"></label><label>地点<input name="location" placeholder="可留空"></label></div><label>文件标识<input name="slug" placeholder="留空自动生成"></label></details>
             <label>正文（Markdown）<textarea name="content" rows="9" placeholder="今天发生了什么？"></textarea></label>
-            <div class="image-section"><div class="section-head compact"><div><strong>动态图片</strong><span>可多选，拖动排序暂用上下按钮</span></div><label class="upload-button">添加图片<input id="moment-images-upload" type="file" accept="image/*,.heic,.heif" multiple hidden></label></div><div id="moment-images" class="image-grid"></div></div>
-            <div class="form-actions"><span class="form-hint">图片会压缩到最长边 2560px。</span><button class="button primary" type="submit">保存动态</button></div>
+            <div class="image-section"><div class="section-head compact"><div><strong>照片</strong><span>可多选，拖动排序暂用上下按钮</span></div><label class="upload-button">添加图片<input id="moment-images-upload" type="file" accept="image/*,.heic,.heif" multiple hidden></label></div><div id="moment-images" class="image-grid"></div></div>
+            <div class="form-actions"><span class="form-hint">图片会压缩到最长边 2560px。</span><button class="button primary" type="submit">保存随手记</button></div>
           </form>
         </div>
       </section>
@@ -112,10 +113,9 @@
           <form id="album-form" class="panel editor-form">
             <div class="section-head"><div><p class="eyebrow">ALBUM EDITOR</p><h2 id="album-heading">新相册</h2></div><button id="delete-album" type="button" class="button danger hidden">删除相册</button></div>
             <input type="hidden" name="originalId">
-            <div class="form-grid two"><label>相册名<input name="title" required></label><label>相册标识<input name="id" required placeholder="例如 street-2026"></label></div>
-            <div class="form-grid two"><label>日期<input name="date" type="date"></label><label>封面地址<input name="cover" placeholder="默认使用第一张照片"></label></div>
-            <label>相册说明<textarea name="description" rows="2"></textarea></label>
-            <div class="image-section"><div class="section-head compact"><div><strong>照片</strong><span>可添加说明、设为封面和调整顺序</span></div><label class="upload-button">导入照片<input id="album-photos-upload" type="file" accept="image/*,.heic,.heif" multiple hidden></label></div><div id="album-photos" class="photo-editor-grid"></div></div>
+            <label>相册名 <span class="optional-note">可不填</span><input name="title" placeholder="例如，周末走走"></label>
+            <details class="optional-fields"><summary>相册的其他选项 <span>日期、封面、说明</span></summary><div class="form-grid two"><label>日期<input name="date" type="date"></label><label>封面地址<input name="cover" placeholder="自动使用第一张照片"></label></div><label>相册说明<textarea name="description" rows="2" placeholder="可留空"></textarea></label><label>相册标识<input name="id" placeholder="留空自动生成"></label></details>
+            <div class="image-section"><div class="section-head compact"><div><strong>照片</strong><span>选好照片就可以保存，说明可不填</span></div><label class="upload-button">导入照片<input id="album-photos-upload" type="file" accept="image/*,.heic,.heif" multiple hidden></label></div><div id="album-photos" class="photo-editor-grid"></div></div>
             <div class="form-actions"><span class="form-hint">删除相册不会立即删除图片文件，避免误删复用素材。</span><button class="button primary" type="submit">保存相册</button></div>
           </form>
         </div>

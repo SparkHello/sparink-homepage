@@ -5,7 +5,7 @@ import { ArrowUpRight, ArrowRight, LockKeyhole } from "lucide-react";
 import { projectsData, type Project } from "../../data/projects";
 
 const categories = [
-  { id: "all", label: "全部作品", en: "ALL" },
+  { id: "all", label: "全部", en: "ALL" },
   { id: "agents", label: "智能体", en: "AGENTS" },
   { id: "memory", label: "记忆", en: "MEMORY" },
   { id: "apps", label: "应用", en: "APPS" },
@@ -122,23 +122,9 @@ export default function ProjectsBoard() {
   return (
     <main className="page-wrap sp-secondary sp-projects">
       <header className="sp-page-intro">
-        <div className="eyebrow sp-overline">
-          <span className="sp-small-dot" /> SELECTED WORK / 持续探索
-        </div>
         <div className="sp-intro-grid">
-          <h1>
-            让好奇心，
-            <br />
-            有迹可循<span className="sp-blue">。</span>
-          </h1>
-          <p>
-            从一个想法，到一个可以使用的工具。
-            <br />
-            这里收录我在 AI、记忆与日常软件里的探索。
-            <span className="sp-intro-en">
-              A collection of things I care enough to build.
-            </span>
-          </p>
+          <h1>折腾</h1>
+          <p>做过的一些工具，也有还在慢慢试的想法。</p>
         </div>
       </header>
       <div className="sp-filter-row">
@@ -152,7 +138,6 @@ export default function ProjectsBoard() {
               className={active === category.id ? "is-active" : ""}
             >
               <span>{category.label}</span>
-              <small>{category.en}</small>
             </button>
           ))}
         </div>

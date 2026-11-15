@@ -4,7 +4,8 @@ const app = {
   token: '',
   previewUrl: 'http://127.0.0.1:3000',
   data: { posts: [], chatters: [], moments: [], albums: [], music: [], settings: {}, git: { branch: '', changes: [] } },
-  writingKind: 'posts',
+  writingKind: 'chatters',
+  bodyUploadRunning: false,
   momentImages: [],
   albumPhotos: [],
   activeAlbum: -1,
@@ -15,7 +16,7 @@ const app = {
 
 const $ = (selector, root = document) => root.querySelector(selector)
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)]
-const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]))
 const assetUrl = (url) => url?.startsWith('/uploads/') ? `${app.previewUrl}${url}` : url
 
@@ -49,7 +50,7 @@ async function loadState(showToast = false) {
 function setView(name) {
   $$('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === name))
   $$('.view').forEach((panel) => panel.classList.toggle('active', panel.dataset.viewPanel === name))
-  const titles = { overview: '内容概览', writing: '文章与日记', moments: '动态', albums: '照片与相册', music: '音乐', publish: '检查与发布' }
+  const titles = { overview: '内容概览', writing: '写日记', moments: '随手记', albums: '照片与相册', music: '音乐', publish: '检查与发布' }
   $('#page-title').textContent = titles[name]
   if (name === 'publish') loadState().catch(handleError)
   if (name === 'albums') scanOrphanUploads(false).catch(handleError)
@@ -77,8 +78,8 @@ function renderStats() {
 
 function renderToggles() {
   const definitions = [
-    ['moments', '动态', '在导航和首页显示动态入口'],
-    ['chatter', '日记 / 杂谈', '在导航和首页显示杂谈入口'],
+    ['moments', '随手记', '把随手记收录到首页与日记列表'],
+    ['chatter', '日记', '把日记收录到首页与日记列表'],
     ['photoWall', '照片墙', '公开相册与照片页面'],
     ['music', '音乐馆', '显示网站播放器与音乐页面'],
   ]
@@ -98,40 +99,99 @@ function recordLabel(record, fallback) { return record.title || record.content?.
 
 function renderWritingList() {
   const query = $('#writing-search')?.value.trim().toLowerCase() || ''
-  const records = app.data[app.writingKind].filter((record) => JSON.stringify([record.title, record.tags, record.description]).toLowerCase().includes(query))
+  const records = app.data[app.writingKind].filter((record) => JSON.stringify([record.title, record.tags, record.description, record.content]).toLowerCase().includes(query))
   const list = $('#writing-list')
   if (!records.length) { list.innerHTML = '<div class="record-empty">还没有内容，点右上角 ＋ 新建</div>'; return }
-  list.innerHTML = records.map((record) => `<button class="record-item" data-writing-slug="${escapeHtml(record.slug)}"><strong>${escapeHtml(record.title)}</strong><span>${escapeHtml(record.date || '未填写日期')} · ${escapeHtml((record.tags || []).join(' / ') || '无标签')}</span></button>`).join('')
+  list.innerHTML = records.map((record) => `<button class="record-item" data-writing-slug="${escapeHtml(record.slug)}"><strong>${escapeHtml(recordLabel(record, '一篇日记'))}</strong><span>${escapeHtml(record.date || '未填写日期')} · ${escapeHtml((record.tags || []).join(' / ') || '无标签')}</span></button>`).join('')
+}
+
+function setRecordDate(form, value) {
+  const original = String(value || '')
+  const day = /^\d{4}-\d{2}-\d{2}/.test(original) ? original.slice(0, 10) : today()
+  form.elements.date.value = day
+  form.dataset.originalDate = original
+  form.dataset.originalDay = form.elements.date.value
+}
+
+function dateForSave(form, value) {
+  return value === form.dataset.originalDay && form.dataset.originalDate ? form.dataset.originalDate : value
 }
 
 function resetWriting(kind = app.writingKind) {
+  if (app.bodyUploadRunning) { toast('照片还在导入，稍等一下'); return }
   app.writingKind = kind
   $$('[data-writing-kind]').forEach((button) => button.classList.toggle('active', button.dataset.writingKind === kind))
   $('#mood-field').classList.toggle('hidden', kind !== 'chatters')
   $('#tags-field').classList.toggle('hidden', false)
   const form = $('#writing-form')
   form.reset()
-  form.elements.date.value = today()
-  $('#writing-eyebrow').textContent = kind === 'posts' ? 'NEW POST' : 'NEW CHATTER'
-  $('#writing-heading').textContent = kind === 'posts' ? '新文章' : '新日记 / 杂谈'
+  $('#writing-options').open = false
+  $('#body-upload-status').textContent = '照片会插在光标处，无需填写说明。'
+  renderBodyAttachments()
+  setRecordDate(form, today())
+  $('#writing-eyebrow').textContent = kind === 'posts' ? 'LONG READ' : 'TODAY’S NOTE'
+  $('#writing-heading').textContent = kind === 'posts' ? '写一篇长文章' : '今天，想记点什么？'
   $('#delete-writing').classList.add('hidden')
   renderCoverPreview('')
   renderWritingList()
 }
 
 function editWriting(slug) {
+  if (app.bodyUploadRunning) { toast('照片还在导入，稍等一下'); return }
   const record = app.data[app.writingKind].find((item) => item.slug === slug)
   if (!record) return
   const form = $('#writing-form')
   for (const name of ['originalSlug', 'slug', 'title', 'date', 'description', 'mood', 'cover', 'content']) {
     if (form.elements[name]) form.elements[name].value = name === 'originalSlug' ? record.slug : (record[name] || '')
   }
+  setRecordDate(form, record.date)
   form.elements.tags.value = (record.tags || []).join(', ')
-  $('#writing-heading').textContent = record.title
+  $('#writing-heading').textContent = recordLabel(record, '编辑日记')
   $('#writing-eyebrow').textContent = app.writingKind === 'posts' ? 'EDIT POST' : 'EDIT CHATTER'
   $('#delete-writing').classList.remove('hidden')
   renderCoverPreview(record.cover)
+  renderBodyAttachments()
   $$('[data-writing-slug]').forEach((node) => node.classList.toggle('active', node.dataset.writingSlug === slug))
+}
+
+function renderBodyAttachments() {
+  const content = $('#writing-form').elements.content.value
+  const urls = [...content.matchAll(/!\[[^\]]*\]\((\/uploads\/[^\s)]+)\)/g)].map(match => match[1])
+  $('#writing-attachments').innerHTML = urls.map((url, index) => `<img src="${escapeHtml(assetUrl(url))}" alt="正文照片 ${index + 1}">`).join('')
+}
+
+async function insertBodyImages(event) {
+  const files = [...event.target.files]
+  if (!files.length || app.bodyUploadRunning) return
+  const textarea = $('#writing-form').elements.content
+  app.bodyUploadRunning = true
+  $('#insert-body-image').disabled = true
+  $('#writing-form button[type="submit"]').disabled = true
+  $('#body-upload-status').textContent = '正在导入照片…'
+  let imported = 0
+  try {
+    for (const file of files) {
+      const [asset] = await uploadFiles([file], 'content')
+      // Read the current textarea, not a snapshot from before the upload.
+      // Inserting never replaces selected text or edits made while uploading.
+      const caret = textarea.selectionStart
+      const prefix = textarea.value.slice(0, caret).endsWith('\n\n') || caret === 0 ? '' : '\n\n'
+      const markdown = `${prefix}![](${asset.url})\n\n`
+      textarea.setRangeText(markdown, caret, caret, 'end')
+      imported += 1
+      renderBodyAttachments()
+    }
+    textarea.focus()
+    toast(`已加入 ${imported} 张照片，保存日记即可`)
+  } catch (error) {
+    handleError(error)
+  } finally {
+    app.bodyUploadRunning = false
+    event.target.value = ''
+    $('#insert-body-image').disabled = false
+    $('#writing-form button[type="submit"]').disabled = false
+    $('#body-upload-status').textContent = imported ? `已加入 ${imported} 张照片，记得保存日记。` : '照片会插在光标处，无需填写说明。'
+  }
 }
 
 function renderCoverPreview(url) {
@@ -140,15 +200,19 @@ function renderCoverPreview(url) {
 
 async function saveWriting(event) {
   event.preventDefault()
+  if (app.bodyUploadRunning) { toast('照片还在导入，完成后再保存'); return }
   const values = Object.fromEntries(new FormData(event.currentTarget))
+  values.date = dateForSave(event.currentTarget, values.date)
   values.tags = values.tags.split(',').map((item) => item.trim()).filter(Boolean)
-  const result = await api(`/api/content/${app.writingKind}/${encodeURIComponent(values.slug)}`, { method: 'PUT', mutate: true, json: values })
+  const slug = String(values.slug || values.originalSlug || '').trim()
+  const result = await api(`/api/content/${app.writingKind}${slug ? `/${encodeURIComponent(slug)}` : ''}`, { method: slug ? 'PUT' : 'POST', mutate: true, json: values })
   await loadState()
   editWriting(result.slug)
   toast('内容已保存到本地')
 }
 
 async function deleteWriting() {
+  if (app.bodyUploadRunning) { toast('照片还在导入，稍等一下'); return }
   const slug = $('#writing-form').elements.originalSlug.value
   if (!slug || !confirm(`把「${slug}」移到本地废纸篓？`)) return
   await api(`/api/content/${app.writingKind}/${encodeURIComponent(slug)}`, { method: 'DELETE', mutate: true })
@@ -164,14 +228,15 @@ function renderMomentList() {
 }
 
 function resetMoment() {
-  const form = $('#moment-form'); form.reset(); form.elements.date.value = today()
-  app.momentImages = []; renderMomentImages(); $('#moment-heading').textContent = '新动态'; $('#delete-moment').classList.add('hidden')
+  const form = $('#moment-form'); form.reset(); setRecordDate(form, today())
+  app.momentImages = []; renderMomentImages(); $('#moment-heading').textContent = '记一个小片刻'; $('#delete-moment').classList.add('hidden')
 }
 
 function editMoment(slug) {
   const record = app.data.moments.find((item) => item.slug === slug); if (!record) return
   const form = $('#moment-form')
   for (const name of ['originalSlug','slug','date','location','content']) form.elements[name].value = name === 'originalSlug' ? record.slug : (record[name] || '')
+  setRecordDate(form, record.date)
   app.momentImages = [...(record.images || [])]
   renderMomentImages(); $('#moment-heading').textContent = recordLabel(record, '动态'); $('#delete-moment').classList.remove('hidden')
   $$('[data-moment-slug]').forEach((node) => node.classList.toggle('active', node.dataset.momentSlug === slug))
@@ -184,8 +249,9 @@ function imageCard(url, index, kind) {
 function renderMomentImages() { $('#moment-images').innerHTML = app.momentImages.length ? app.momentImages.map((url, index) => imageCard(url, index, 'moment')).join('') : '<div class="record-empty">暂无图片</div>' }
 
 async function saveMoment(event) {
-  event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget)); values.images = app.momentImages
-  const result = await api(`/api/content/moments/${encodeURIComponent(values.slug)}`, { method: 'PUT', mutate: true, json: values })
+  event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget)); values.images = app.momentImages; values.date = dateForSave(event.currentTarget, values.date)
+  const slug = String(values.slug || values.originalSlug || '').trim()
+  const result = await api(`/api/content/moments${slug ? `/${encodeURIComponent(slug)}` : ''}`, { method: slug ? 'PUT' : 'POST', mutate: true, json: values })
   await loadState(); editMoment(result.slug); toast('动态已保存到本地')
 }
 
@@ -215,7 +281,7 @@ function renderAlbumList() {
 }
 
 function resetAlbum() {
-  app.activeAlbum = -1; app.albumPhotos = []; const form = $('#album-form'); form.reset(); form.elements.date.value = today(); $('#album-heading').textContent = '新相册'; $('#delete-album').classList.add('hidden'); renderAlbumPhotos(); renderAlbumList()
+  app.activeAlbum = -1; app.albumPhotos = []; const form = $('#album-form'); form.reset(); setRecordDate(form, today()); $('#album-heading').textContent = '新相册'; $('#delete-album').classList.add('hidden'); renderAlbumPhotos(); renderAlbumList()
 }
 
 function editAlbum(index) {
@@ -223,12 +289,13 @@ function editAlbum(index) {
   app.activeAlbum = index; app.albumPhotos = (album.photos || []).map((photo) => ({ ...photo }))
   const form = $('#album-form')
   for (const name of ['originalId','id','title','date','cover','description']) form.elements[name].value = name === 'originalId' ? album.id : (album[name] || '')
+  setRecordDate(form, album.date)
   $('#album-heading').textContent = album.title; $('#delete-album').classList.remove('hidden'); renderAlbumPhotos(); renderAlbumList()
 }
 
 function renderAlbumPhotos() {
   const cover = $('#album-form').elements.cover.value
-  $('#album-photos').innerHTML = app.albumPhotos.length ? app.albumPhotos.map((photo, index) => `<article class="photo-card">${cover === photo.url ? '<span class="cover-badge">封面</span>' : ''}<img src="${escapeHtml(assetUrl(photo.url))}" alt="照片 ${index + 1}"><input data-photo-caption="${index}" value="${escapeHtml(photo.caption || '')}" placeholder="照片说明"><div class="image-actions"><button type="button" data-set-cover="${index}">设封面</button><button type="button" data-image-action="up" data-kind="album" data-index="${index}">↑</button><button type="button" data-image-action="down" data-kind="album" data-index="${index}">↓</button><button type="button" data-image-action="remove" data-kind="album" data-index="${index}">移除</button></div></article>`).join('') : '<div class="record-empty">导入照片后会显示在这里</div>'
+  $('#album-photos').innerHTML = app.albumPhotos.length ? app.albumPhotos.map((photo, index) => `<article class="photo-card">${cover === photo.url ? '<span class="cover-badge">封面</span>' : ''}<img src="${escapeHtml(assetUrl(photo.url))}" alt="照片 ${index + 1}"><input data-photo-caption="${index}" value="${escapeHtml(photo.caption || '')}" placeholder="照片说明（可不填）" aria-label="照片说明（可不填）"><div class="image-actions"><button type="button" data-set-cover="${index}">设封面</button><button type="button" data-image-action="up" data-kind="album" data-index="${index}">↑</button><button type="button" data-image-action="down" data-kind="album" data-index="${index}">↓</button><button type="button" data-image-action="remove" data-kind="album" data-index="${index}">移除</button></div></article>`).join('') : '<div class="record-empty">导入照片后会显示在这里</div>'
 }
 
 function formatBytes(bytes) {
@@ -308,11 +375,12 @@ function syncAlbumCaptions() {
 
 async function saveAlbum(event) {
   event.preventDefault(); syncAlbumCaptions()
-  const values = Object.fromEntries(new FormData(event.currentTarget)); const album = { id: values.id, title: values.title, description: values.description, cover: values.cover, date: values.date, photos: app.albumPhotos }
+  const values = Object.fromEntries(new FormData(event.currentTarget)); const album = { id: values.id || values.originalId, title: values.title, description: values.description, cover: values.cover, date: dateForSave(event.currentTarget, values.date), photos: app.albumPhotos }
   const next = [...app.data.albums]
+  const savedIndex = app.activeAlbum >= 0 ? app.activeAlbum : 0
   if (app.activeAlbum >= 0) next[app.activeAlbum] = album; else next.unshift(album)
   const result = await api('/api/albums', { method: 'PUT', mutate: true, json: next }); app.data.albums = result.albums
-  app.activeAlbum = app.data.albums.findIndex((item) => item.id === album.id); invalidateOrphanUploads(); renderAll(); editAlbum(app.activeAlbum); toast('相册已保存到本地')
+  app.activeAlbum = savedIndex; invalidateOrphanUploads(); renderAll(); editAlbum(app.activeAlbum); toast('相册已保存到本地')
 }
 
 async function deleteAlbum() {
@@ -428,8 +496,11 @@ function bindEvents() {
   $('#new-writing').addEventListener('click', () => resetWriting()); $('#writing-search').addEventListener('input', renderWritingList)
   $('#writing-list').addEventListener('click', (event) => { const button = event.target.closest('[data-writing-slug]'); if (button) editWriting(button.dataset.writingSlug) })
   $('#writing-form').addEventListener('submit', (event) => saveWriting(event).catch(handleError)); $('#delete-writing').addEventListener('click', () => deleteWriting().catch(handleError))
+  $('#insert-body-image').addEventListener('click', () => $('#writing-body-upload').click())
+  $('#writing-body-upload').addEventListener('change', insertBodyImages)
+  $('#writing-form').elements.content.addEventListener('input', renderBodyAttachments)
   $('#writing-form').elements.cover.addEventListener('input', (event) => renderCoverPreview(event.target.value))
-  $('#writing-cover-upload').addEventListener('change', async (event) => { try { const [asset] = await uploadFiles([...event.target.files], 'content'); $('#writing-form').elements.cover.value = asset.url; renderCoverPreview(asset.url); toast('封面已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })
+  $('#writing-cover-upload').addEventListener('change', async (event) => { try { const [asset] = await uploadFiles([...event.target.files], 'content'); if (!asset) return; $('#writing-form').elements.cover.value = asset.url; renderCoverPreview(asset.url); toast('封面已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })
   $('#new-moment').addEventListener('click', resetMoment); $('#moment-list').addEventListener('click', (event) => { const button = event.target.closest('[data-moment-slug]'); if (button) editMoment(button.dataset.momentSlug) })
   $('#moment-form').addEventListener('submit', (event) => saveMoment(event).catch(handleError)); $('#delete-moment').addEventListener('click', () => deleteMoment().catch(handleError))
   $('#moment-images-upload').addEventListener('change', async (event) => { try { app.momentImages.push(...(await uploadFiles([...event.target.files], 'content')).map((asset) => asset.url)); renderMomentImages(); toast('动态图片已导入') } catch (error) { handleError(error) } finally { event.target.value = '' } })

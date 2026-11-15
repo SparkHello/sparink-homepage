@@ -1,153 +1,32 @@
-"use client";
-
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight, Search } from "lucide-react";
-import "./extras.css";
-
-export type JournalEntry = {
-  slug: string;
-  title: string;
-  date: string;
-  description: string;
-  tags: string[];
-};
-
-export default function Journal({
-  entries,
-  variant = "journal",
-}: {
-  entries: JournalEntry[];
-  variant?: "journal" | "chatter";
-}) {
-  const [query, setQuery] = useState("");
-  const [tag, setTag] = useState("全部");
-  const tags = useMemo(
-    () => [...new Set(entries.flatMap((entry) => entry.tags))],
-    [entries],
-  );
-  const results = useMemo(
-    () =>
-      entries.filter(
-        (entry) =>
-          (tag === "全部" || entry.tags.includes(tag)) &&
-          `${entry.title} ${entry.description} ${entry.tags.join(" ")}`
-            .toLowerCase()
-            .includes(query.trim().toLowerCase()),
-      ),
-    [entries, query, tag],
-  );
-  const isJournal = variant === "journal";
-  return (
-    <section className="page-wrap extra-page">
-      <header className="extra-heading">
-        <span className="eyebrow">
-          {isJournal ? "FIELD NOTES / 记录与思考" : "MARGINALIA / 灵感碎片"}
-        </span>
-        <h1>
-          {isJournal ? (
-            <>
-              想法，
-              <br />
-              <em>慢慢成形。</em>
-            </>
-          ) : (
-            <>
-              留一点空间，
-              <br />
-              <em>给偶然的想法。</em>
-            </>
-          )}
-        </h1>
-        <p>
-          {isJournal
-            ? "关于 AI、代码与硬件的实践记录。把问题写下来，也把探索的过程留下来。"
-            : "不必完整，也不急着有结论。收集日常里值得停留片刻的念头。"}
-        </p>
-      </header>
-      <div className="journal-toolbar">
-        <span className="extra-mono">
-          {String(entries.length).padStart(2, "0")} ENTRIES
-        </span>
-        <label className="journal-search">
-          <Search size={17} />
-          <input
-            aria-label="搜索记录"
-            placeholder="搜索记录…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-      </div>
-      {tags.length > 0 && (
-        <div className="journal-tags" aria-label="按标签筛选">
-          {["全部", ...tags].map((item) => (
-            <button
-              key={item}
-              type="button"
-              aria-pressed={tag === item}
-              onClick={() => setTag(item)}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      )}
-      {results.length ? (
-        <div className="journal-entries">
-          {results.map((entry, index) => (
-            <Link
-              className="journal-entry"
-              key={entry.slug}
-              href={`/${isJournal ? "posts" : "chatter"}/${entry.slug}`}
-            >
-              <span className="extra-mono journal-index">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <div className="journal-meta">
-                  <time dateTime={entry.date}>{entry.date.slice(0, 10)}</time>
-                  <span>{entry.tags.join(" / ")}</span>
-                </div>
-                <h2>{entry.title}</h2>
-                <p>{entry.description}</p>
-              </div>
-              <ArrowUpRight aria-hidden="true" size={25} />
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="extra-empty">
-          <span className="extra-empty-mark" aria-hidden="true">
-            ✳
-          </span>
-          <h2>
-            {entries.length ? "暂时没有匹配的记录。" : "留白，也是一种开始。"}
-          </h2>
-          <p>
-            {entries.length
-              ? "换一个关键词，或选择其他标签。"
-              : isJournal
-                ? "第一篇记录正在酝酿。先去看看那些已经成形的项目。"
-                : "新的想法会慢慢来到这里。"}
-          </p>
-          {entries.length ? (
-            <button
-              className="text-link"
-              onClick={() => {
-                setQuery("");
-                setTag("全部");
-              }}
-            >
-              清除筛选 <ArrowUpRight size={17} />
-            </button>
-          ) : (
-            <Link className="text-link" href="/projects">
-              探索项目 <ArrowUpRight size={17} />
-            </Link>
-          )}
-        </div>
-      )}
-    </section>
-  );
+'use client';
+import { Fragment, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Search } from 'lucide-react';
+import type { DiaryEntryData } from '../../lib/diary';
+import { groupDiaryEntries } from '../../lib/diary-groups';
+import DiaryEntry from './DiaryEntry';
+import './diary.css';
+export type JournalEntry = DiaryEntryData;
+export default function Journal({ entries, variant = 'journal' }: { entries: DiaryEntryData[]; variant?: 'journal' | 'chatter' | 'moments' }) {
+  const [query, setQuery] = useState('');
+  const [year, setYear] = useState('');
+  const [month, setMonth] = useState('');
+  const years = useMemo(() => [...new Set(entries.map(entry => entry.year).filter(Boolean))].sort().reverse(), [entries]);
+  const months = useMemo(() => [...new Set(entries.filter(entry => entry.year === year).map(entry => entry.month))].sort().reverse(), [entries, year]);
+  const results = useMemo(() => entries.filter(entry => (!year || entry.year === year) && (!month || entry.month === month) && `${entry.title}\n${entry.fullText}\n${entry.tags.join(' ')}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())), [entries, query, year, month]);
+  const groups = useMemo(() => groupDiaryEntries(results), [results]);
+  const filtered = Boolean(query || year || month);
+  return <main className="diary-archive">
+    <header className="diary-header"><h1>{variant === 'chatter' ? '随手记' : variant === 'moments' ? '日常' : '日记'}</h1><p>{variant === 'journal' ? '按时间，翻一翻过去的日子。' : '一些随手写下的小事。'}</p></header>
+    {entries.length > 0 && <div className="diary-tools">
+      <label className="diary-search"><Search size={16} aria-hidden="true"/><input type="search" aria-label="搜索日记全文" placeholder="在日记里找一找…" value={query} onChange={event => setQuery(event.target.value)}/></label>
+      <div className="diary-periods"><select aria-label="按年份查看" value={year} onChange={event => { setYear(event.target.value); setMonth(''); }}><option value="">所有年份</option>{years.map(value => <option key={value} value={value}>{value} 年</option>)}</select><select aria-label="按月份查看" value={month} disabled={!year} onChange={event => setMonth(event.target.value)}><option value="">所有月份</option>{months.map(value => <option key={value} value={value}>{Number(value)} 月</option>)}</select></div>
+      {filtered && <button className="diary-clear" onClick={() => { setQuery(''); setYear(''); setMonth(''); }}>清除筛选</button>}
+    </div>}
+    {groups.length > 0 ? <div className="diary-months">{groups.map((group, index) => <Fragment key={group.key}>
+      {group.year !== groups[index - 1]?.year && <h2 className="diary-year">{group.year || '未注明日期'}</h2>}
+      {group.month && <h3 className="diary-month" id={`month-${group.key}`}>{group.label}</h3>}
+      {group.days.map(day => <section className="diary-day" key={day.key} aria-labelledby={`day-${day.key}`}><h4 className="diary-day-heading" id={`day-${day.key}`}>{day.label}</h4>{day.entries.map(entry => <DiaryEntry key={entry.id} entry={entry} showDate={false}/>)}</section>)}
+    </Fragment>)}</div> : <div className="diary-empty" role="status"><p>{entries.length ? '没有找到这段记录，换个词或日期试试。' : '还没有写下日记，先翻翻相册吧。'}</p>{!entries.length && <Link href="/photowall">翻翻相册 →</Link>}</div>}
+  </main>;
 }

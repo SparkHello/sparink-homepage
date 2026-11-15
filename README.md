@@ -1,8 +1,8 @@
-# Sparink — 个人数字工作室
+# Sparink — 日记与相册
 
-Sparink 的个人主页与数字花园，记录 AI Agent、长期记忆、代码、硬件，以及偶尔冒出来的灵感。
+Sparink 用来长期记录生活的个人网站。日记、相册与随手写下的几句话，按时间慢慢积累。项目与代码保留在「关于 → 折腾」，不再占据首页主线。
 
-2026 年 11 月完成原创视觉重设计：暖白、墨黑与钴蓝的编辑式布局，原创 Three.js 记忆轨道雕塑，配套作品、手记、相册、关于、音乐和实验室页面。保留真实项目、62 张照片与原有本地内容工作台。
+延续米白、墨黑与钴蓝的排版，首页保留可拖动、切换和暂停的蓝色丝线雕塑。主导航是「日记 / 相册 / 关于」，名字返回首页。原有两本相册、62 张照片、项目与本地内容工作台全部保留，没有生成占位日记。
 
 ## 本地预览
 
@@ -23,19 +23,23 @@ npm run build
 ## 主要配置
 
 - 域名、数据及功能开关：`XHBlogs/siteConfig.ts`
-- 首页文案和精选作品：`XHBlogs/app/page.tsx`
+- 首页介绍、最近日记和相册入口：`XHBlogs/app/page.tsx`
 - 关于页：`XHBlogs/app/about/page.tsx`
-- 导航、联系和页脚：`XHBlogs/components/atelier/AtelierShell.tsx`
+- 导航和页脚：`XHBlogs/components/atelier/AtelierShell.tsx`
 - 视觉设计：`XHBlogs/app/globals.css` 和 `XHBlogs/components/atelier/*.css`
 - 项目列表：`XHBlogs/data/projects.ts`
-- 文章：`XHBlogs/posts/*.md`
-- 灵感碎片：`XHBlogs/chatters/*.md`
-- 动态：`XHBlogs/moments/*.md`
+- 长文章：`XHBlogs/posts/*.md`
+- 日记：`XHBlogs/chatters/*.md`
+- 随手记（也会汇入日记）：`XHBlogs/moments/*.md`
 - 相册：`XHBlogs/data/albums.json`
 - 歌单：`XHBlogs/data/music.json`
 - 内容栏目开关：`XHBlogs/data/content-settings.json`
 
-新版页面使用原创 Atelier 组件。上游许可证保留，设计来处与致谢见网站 `/colophon`。文章阅读页支持 Markdown、代码高亮、公式、表格与目录。音乐仅在首次进入歌单页时加载，首屏不请求音乐接口。
+日记入口沿用 `/timeline`，按年、月、日合并三种记录，支持全文搜索和年月筛选。600 字以内的短记录直接阅读全文和图片；较长、含代码块或多个章节的记录进入详情。标题可以留空，不会补成「未命名」。原 `/posts/[slug]`、`/chatter/[slug]` 与 `/moments` 保留，新增 `/moments/[slug]`；日期统一按上海时区理解。`lib/diary.ts` 负责解析与排序，`components/atelier/diary.css` 控制安静的阅读排版。
+
+相册入口沿用 `/photowall`，每本相册有独立的 `/photowall/[albumId]` 链接。照片查看支持原图、前后切换、方向键、Escape 与手机横滑。照片说明可空，原始标题、日期和说明来自现有 JSON。
+
+上游许可证保留，设计来处与致谢见 `/colophon`。阅读页继续支持 Markdown、代码高亮、公式和表格。音乐仅在首次进入歌单页时加载，首屏不请求音乐接口。
 
 ## Sparink Studio 本地内容控制台
 
@@ -54,6 +58,15 @@ npm run studio
 - “构建并推送”会先执行生产构建，只暂存内容目录，再提交到 GitHub `main`。
 - 如果仓库存在控制台范围外的源码改动，发布会停止，避免误提交其他工作。
 - 删除的 Markdown 会移入本机 `.content-studio/trash`，该目录不会进入 Git。
+
+### 今天只有两句话和一张照片
+
+1. 运行 `npm run studio`，直接进入「写日记」。
+2. 写正文，标题可以不填。点击「添加照片」在光标处插入图片，无需图注。
+3. 点击「保存到本地」即可预览。日期默认今天（上海时区），文件名自动生成；改日期、标签、摘要或封面时再展开「日期与其他选项」。
+4. 满意后在「检查与发布」构建并推送。新日记自动进入首页和 `/timeline`，以后可按年月或正文关键词找回。
+
+直接编辑 Markdown 也可以：日期加正文和 Markdown 图片已足够，不需要封面、摘要或标签。相册仍在「照片与相册」中创建，批量添加照片；名称、说明和每张照片的说明均可稍后再补。默认第一张照片作为封面，已有相册 ID 与链接保持稳定。
 
 控制台源码位于 `XHBlogs/scripts/content-studio.mjs` 与 `XHBlogs/scripts/content-studio/`。也可以继续直接编辑内容文件，结果完全相同。
 

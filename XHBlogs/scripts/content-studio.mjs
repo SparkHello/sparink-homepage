@@ -128,9 +128,11 @@ function text(value, maximum = 10000) {
   return result
 }
 
-function stringList(value, maximumItems = 30) {
-  const list = Array.isArray(value) ? value : String(value || '').split(',')
-  return list.map((item) => text(item, 100)).filter(Boolean).slice(0, maximumItems)
+function stringList(value, maximumItems = 30, rejectOverflow = false) {
+  const source = Array.isArray(value) ? value : String(value || '').split(',')
+  const list = source.map((item) => text(item, 100)).filter(Boolean)
+  if (rejectOverflow && list.length > maximumItems) throw Object.assign(new Error(`最多可保存 ${maximumItems} 张图片，请减少后重试；原记录未修改`), { statusCode: 400 })
+  return list.slice(0, maximumItems)
 }
 
 function pixelCount(value) {
@@ -305,24 +307,32 @@ async function listContent(kind) {
     const { data, content } = parseFrontmatter(await readFile(join(directory, filename), 'utf8'))
     return { slug, ...data, content }
   }))
-  return records.sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')))
+  return records.sort((left, right) => String(right.date || '').localeCompare(String(left.date || '')) || String(right.createdAt || '').localeCompare(String(left.createdAt || '')) || right.slug.localeCompare(left.slug))
+}
+
+function localToday(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+}
+
+function automaticSlug(date = localToday()) {
+  const day = /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : localToday()
+  return `${day}-${randomBytes(6).toString('hex')}`
 }
 
 function contentPayload(kind, payload) {
-  const date = text(payload.date, 40) || new Date().toISOString().slice(0, 10)
+  const date = text(payload.date, 40) || localToday()
   const content = text(payload.content, 200000)
   if (kind === 'moments') {
     return {
       data: {
         date,
         location: text(payload.location, 200),
-        images: stringList(payload.images, 20).map(safeUrl),
+        images: stringList(payload.images, 20, true).map(safeUrl),
       },
       content,
     }
   }
   const title = text(payload.title, 200)
-  if (!title) throw Object.assign(new Error('标题不能为空'), { statusCode: 400 })
   const data = {
     title,
     date,
@@ -337,21 +347,38 @@ function contentPayload(kind, payload) {
 async function saveContent(kind, requestedSlug, payload) {
   const directory = CONTENT_DIRECTORIES[kind]
   if (!directory) throw Object.assign(new Error('未知内容类型'), { statusCode: 404 })
-  const slug = cleanSlug(requestedSlug)
-  const originalSlug = payload.originalSlug ? cleanSlug(payload.originalSlug) : slug
-  const destination = join(directory, `${slug}.md`)
-  const original = join(directory, `${originalSlug}.md`)
-  await mkdir(directory, { recursive: true })
-  if (slug !== originalSlug && await pathExists(destination)) {
-    throw Object.assign(new Error('新的标识已经存在'), { statusCode: 409 })
+  const originalSlug = payload.originalSlug ? cleanSlug(payload.originalSlug) : ''
+  let originalData = {}
+  if (originalSlug) {
+    const originalPath = join(directory, `${originalSlug}.md`)
+    if (!await pathExists(originalPath)) throw Object.assign(new Error('原记录已不存在，请刷新后重试'), { statusCode: 409 })
+    originalData = parseFrontmatter(await readFile(originalPath, 'utf8')).data
   }
   const normalized = contentPayload(kind, payload)
-  await writeFile(destination, serializeFrontmatter(normalized.data, normalized.content), 'utf8')
-  if (slug !== originalSlug && await pathExists(original)) {
-    await mkdir(TRASH_DIR, { recursive: true })
-    await rename(original, join(TRASH_DIR, `${Date.now()}-${kind}-${originalSlug}.md`))
+  normalized.data = { ...originalData, ...normalized.data }
+  // Creation order is server-owned and stays stable across subsequent edits.
+  // Legacy records without a creation timestamp retain their existing metadata.
+  if (!originalSlug) normalized.data.createdAt = new Date().toISOString()
+  const providedSlug = String(requestedSlug || '').trim()
+  let slug = providedSlug ? cleanSlug(providedSlug) : originalSlug || automaticSlug(normalized.data.date)
+  await mkdir(directory, { recursive: true })
+  // A new record never replaces another entry, even during simultaneous saves.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const destination = join(directory, `${slug}.md`)
+    try {
+      await writeFile(destination, serializeFrontmatter(normalized.data, normalized.content), { encoding: 'utf8', flag: originalSlug === slug ? 'w' : 'wx' })
+      if (originalSlug && slug !== originalSlug) {
+        await mkdir(TRASH_DIR, { recursive: true })
+        await rename(join(directory, `${originalSlug}.md`), join(TRASH_DIR, `${Date.now()}-${kind}-${originalSlug}.md`))
+      }
+      return { slug }
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error
+      if (providedSlug || originalSlug) throw Object.assign(new Error('文件标识已存在，请更换或留空自动生成'), { statusCode: 409 })
+      slug = automaticSlug(normalized.data.date)
+    }
   }
-  return { slug }
+  throw Object.assign(new Error('暂时无法生成新记录标识，请重试'), { statusCode: 409 })
 }
 
 async function trashContent(kind, requestedSlug) {
@@ -368,10 +395,11 @@ function validateAlbums(value) {
   if (!Array.isArray(value) || value.length > 100) throw Object.assign(new Error('相册数据无效'), { statusCode: 400 })
   const ids = new Set()
   return value.map((album) => {
-    const id = cleanSlug(album.id)
+    const id = String(album.id || '').trim() ? cleanSlug(album.id) : `album-${automaticSlug(album.date || localToday())}`
     if (ids.has(id)) throw Object.assign(new Error(`相册标识重复：${id}`), { statusCode: 400 })
     ids.add(id)
-    const photos = Array.isArray(album.photos) ? album.photos.slice(0, 500).map((photo) => {
+    if (Array.isArray(album.photos) && album.photos.length > 500) throw Object.assign(new Error('每个相册最多 500 张照片，请减少后重试；原相册未修改'), { statusCode: 400 })
+    const photos = Array.isArray(album.photos) ? album.photos.map((photo) => {
       const record = { url: safeUrl(photo.url), caption: text(photo.caption, 300) }
       const thumb = safeUrl(photo.thumb)
       if (thumb) record.thumb = thumb
@@ -383,10 +411,10 @@ function validateAlbums(value) {
     const cover = safeUrl(album.cover) || photos[0]?.url || ''
     return {
       id,
-      title: text(album.title, 120) || id,
+      title: text(album.title, 120) || `${text(album.date, 40) || localToday()} 的照片`,
       description: text(album.description, 500),
       cover,
-      date: text(album.date, 40) || new Date().toISOString().slice(0, 10),
+      date: text(album.date, 40) || localToday(),
       photos,
     }
   })
@@ -459,13 +487,13 @@ async function uploadImage(request, requestUrl) {
   const originalName = decodeURIComponent(String(request.headers['x-file-name'] || 'image'))
   const buffer = await readBody(request, MAX_UPLOAD_BYTES)
   if (!buffer.length) throw Object.assign(new Error('图片为空'), { statusCode: 400 })
-  const now = new Date()
+  const uploadDay = localToday()
   const scope = requestUrl.searchParams.get('scope') === 'photos' ? 'photos' : 'content'
   const folder = join(
     UPLOADS_DIR,
     scope,
-    String(now.getFullYear()),
-    String(now.getMonth() + 1).padStart(2, '0'),
+    uploadDay.slice(0, 4),
+    uploadDay.slice(5, 7),
   )
   await mkdir(folder, { recursive: true })
   const stem = originalName
@@ -526,10 +554,21 @@ function appendJob(job, message) {
   job.logs = `${job.logs}${line}`.slice(-100000)
 }
 
+function spawnTask(command, args, options = {}) {
+  // On Windows npm is a .cmd/.ps1 shim, not an executable for spawn().
+  // Run npm's JS entry directly, keeping arguments out of a shell.
+  const npmOnWindows = command === 'npm' && process.platform === 'win32'
+  const executable = npmOnWindows ? process.execPath : command
+  const taskArgs = npmOnWindows
+    ? [process.env.npm_execpath || join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'), ...args]
+    : args
+  return spawn(executable, taskArgs, { ...options, windowsHide: true })
+}
+
 function runCommand(job, command, args, options = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
     appendJob(job, `\n$ ${command} ${args.join(' ')}\n`)
-    const child = spawn(command, args, {
+    const child = spawnTask(command, args, {
       cwd: options.cwd || PROJECT_DIR,
       env: { ...process.env, ...options.env },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -587,13 +626,14 @@ async function previewIsReady() {
 async function ensurePreview() {
   if (await previewIsReady()) return true
   if (previewProcess && previewProcess.exitCode === null) return false
-  previewProcess = spawn('npm', ['run', 'dev'], {
+  previewProcess = spawnTask('npm', ['run', 'dev'], {
     cwd: PROJECT_DIR,
     env: { ...process.env, NEXT_DIST_DIR: '.next-studio-dev' },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   previewProcess.stdout.on('data', (chunk) => process.stdout.write(`[site] ${chunk}`))
   previewProcess.stderr.on('data', (chunk) => process.stderr.write(`[site] ${chunk}`))
+  previewProcess.on('error', (error) => { console.error('[studio] 网站预览启动失败:', error.message); previewProcess = null })
   previewProcess.on('exit', () => { previewProcess = null })
   for (let attempt = 0; attempt < 30; attempt += 1) {
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 250))
@@ -683,6 +723,13 @@ const server = createServer(async (request, response) => {
       return
     }
 
+    const createContentMatch = requestUrl.pathname.match(/^\/api\/content\/(posts|chatters|moments)$/)
+    if (createContentMatch && request.method === 'POST') {
+      const payload = await readJson(request)
+      sendJson(response, 201, await saveContent(createContentMatch[1], payload.slug || '', payload))
+      return
+    }
+
     const contentMatch = requestUrl.pathname.match(/^\/api\/content\/(posts|chatters|moments)\/([^/]+)$/)
     if (contentMatch && request.method === 'PUT') {
       sendJson(response, 200, await saveContent(contentMatch[1], decodeURIComponent(contentMatch[2]), await readJson(request)))
@@ -742,7 +789,10 @@ server.listen(PORT, HOST, async () => {
   console.log(`Site preview: ${SITE_PREVIEW_URL}`)
   void ensurePreview()
   if (process.argv.includes('--open')) {
-    try { await execFileAsync('open', [`http://${HOST}:${PORT}`]) } catch {}
+    const url = `http://${HOST}:${PORT}`
+    const command = process.platform === 'win32' ? 'rundll32.exe' : process.platform === 'darwin' ? 'open' : 'xdg-open'
+    const args = process.platform === 'win32' ? ['url.dll,FileProtocolHandler', url] : [url]
+    try { await execFileAsync(command, args, { windowsHide: true }) } catch {}
   }
 })
 

@@ -1,6 +1,6 @@
 {
-  "moments": false,
-  "chatter": false,
+  "moments": true,
+  "chatter": true,
   "photoWall": true,
   "music": true
 }

@@ -1,9 +1,9 @@
-import { siteConfig } from "@/siteConfig";
 import MusicClient from "./MusicClient";
+import "../../components/atelier/compact-pages.css";
 
-// 🌟 这里是服务端渲染，完美支持 metadata
 export const metadata = {
-  title: "音乐馆",
+  title: "听听歌",
+  description: "一些喜欢听的歌。",
 };
 
 export default function MusicPage() {

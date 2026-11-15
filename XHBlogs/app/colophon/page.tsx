@@ -3,15 +3,14 @@ export const metadata = { title: "关于本站" };
 export default function Colophon() {
   return (
     <main className="page-wrap colophon">
-      <p className="section-kicker">COLOPHON / ABOUT THIS SPACE</p>
-      <h1>一个持续生长的地方。</h1>
+      <h1>关于本站</h1>
       <p>
         这是 Sparink
-        的个人数字工作室。记录正在做的项目、未完成的思考，以及屏幕之外的生活。
+        用来长期记录生活的个人网站。日记、相片和随手写下的几句话，按日子慢慢积累。
       </p>
       <h2>设计与构建</h2>
       <p>
-        暖白纸面、墨色文字与一抹钴蓝。以编辑式排版组织内容，用原创的三维「记忆轨道」表达彼此连接的思绪。主视觉由代码实时绘制；作品展板为概念演绎，相册来自我的真实生活。
+        米白纸面、墨色文字与一抹钴蓝。首页的蓝色丝线雕塑由代码实时绘制，可以拖动，也可以暂停。阅读时让文字安静一点；翻相册时，把空间留给照片。
       </p>
       <p>
         本站使用 Next.js、React、Three.js，部署于 Cloudflare Workers。字体使用

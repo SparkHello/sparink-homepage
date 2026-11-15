@@ -1,10 +1,12 @@
 import Link from "next/link";
+import "../components/atelier/compact-pages.css";
 export default function NotFound() {
   return (
-    <main className="page-wrap colophon">
-      <p className="section-kicker">404 / UNCHARTED TERRITORY</p>
-      <h1>走到留白的地方了。</h1>
-      <p>这一页还不存在，或已经搬去了别处。回到首页，再发现一些有趣的东西。</p>
+    <main className="page-wrap quiet-page quiet-not-found">
+      <header className="extra-heading">
+        <h1>没找到这一页</h1>
+        <p>可能是地址写错了，也可能已经搬走了。</p>
+      </header>
       <Link className="text-link" href="/">
         回到首页 ↗
       </Link>
