@@ -122,6 +122,7 @@ export default function AlbumPhotoStack({ albumId, photos, title, variant = 'fir
   if (!count) return null;
   const backs = Array.from({ length: Math.min(2, count - 1) }, (_, depth) => ({ depth: depth + 1, photo: items[(selected + depth + 1) % count] })).reverse();
   const current = items[selected];
+  const transitionName = albumPhotoName(albumId, current.originalIndex);
   return <div className={`${styles.stack} ${variant === 'second' ? styles.second : ''}`} role="group" aria-label={`${albumTitle}，照片预览`} onKeyDown={event => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'ArrowLeft') { event.preventDefault(); change(-1); }
@@ -134,7 +135,8 @@ export default function AlbumPhotoStack({ albumId, photos, title, variant = 'fir
         if (event.detail > 0 && suppressClick.current) { suppressClick.current = false; return; }
         change(1);
       }}>
-        <ViewTransition name={albumPhotoName(albumId, current.originalIndex)} share="album-photo" default="none"><img src={current.thumb || current.url} alt="" width={current.width} height={current.height} loading="lazy" draggable={false} onError={event => { if (event.currentTarget.getAttribute('src') !== current.url) event.currentTarget.src = current.url; }} /></ViewTransition>
+        {/* A different photo is a different boundary, so its old shared name is released. */}
+        <ViewTransition key={transitionName} name={transitionName} share="album-photo" default="none"><img src={current.thumb || current.url} alt="" width={current.width} height={current.height} loading="lazy" draggable={false} onError={event => { if (event.currentTarget.getAttribute('src') !== current.url) event.currentTarget.src = current.url; }} /></ViewTransition>
       </button>
     </div>
     <div className={styles.toolbar}>

@@ -20,6 +20,12 @@ npm run dev
 npm run build
 ```
 
+音乐底层与接口的专项测试（Node.js 24）：
+
+```bash
+npm run test:music
+```
+
 ## 主要配置
 
 - 域名、数据及功能开关：`XHBlogs/siteConfig.ts`
@@ -55,7 +61,7 @@ npm run build
 
 「听听歌」采用纸袋与光盘：点按后光盘抽出，只有音频实际播放时旋转；暂停、缓冲、失败、离屏或后台时停住。初次进入不自动播放，播放失败可重试，仍沿用已有歌单、进度、音量和歌词。以上动效均尊重系统减少动态效果设置。
 
-上游许可证保留，设计来处与致谢见 `/colophon`。阅读页继续支持 Markdown、代码高亮、公式和表格。音乐仅在首次进入歌单页时加载，首屏不请求音乐接口。
+设计说明与灵感来源见 `/colophon`，代码来源核对见 `docs/source-audit.md`。阅读页继续支持 Markdown、代码高亮、公式和表格。音乐仅在首次进入歌单页时加载，首屏不请求音乐接口。
 
 ## Sparink Studio 本地内容控制台
 
@@ -99,8 +105,10 @@ npm run preview
 
 生产构建关闭 Turbopack 文件系统缓存，避免 Next.js 16.3 在云端恢复缓存时复用旧 CSS。每次发布使用 Git 提交 SHA 作为 deploymentId，保证导航和静态资源版本一致。
 
-## License & Attribution
+## 代码与内容的使用
 
-本项目基于 [XingHuiSama/XinghuisamaBlogs](https://github.com/heiehiehi/XinghuisamaBlogs) 修改，并保留其原始许可证。
+当前自有代码保留权利，公开可查看，额外复用请联系 `sparinkme@gmail.com`，详见 [LICENSE](LICENSE)。照片、日记、头像与外部音乐单独处理，不随代码开放复用。
 
-上游项目采用 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)：允许署名后的非商业性使用和修改。当前版本已由 Sparink 进行个人化修改；若未来需要商业化，应先取得原作者授权，或替换受该许可证约束的底层实现与素材。
+旧模板实现、旧后台、未使用组件和模板素材已从当前发布树移除；音乐底层按现有功能合同独立重写。第三方框架、字体和图标继续使用各自许可。历史版本的原作者记录和原许可集中保存在 [NOTICE.md](NOTICE.md) 与 `LICENSES/`，已有授权不受新声明影响。
+
+前端目录名 `XHBlogs` 暂时保留以兼容 Cloudflare 的构建根目录和本地 Studio 的发布路径，不代表仍加载旧模板。数据目录、相册 ID 和有效页面链接继续兼容。

@@ -23,26 +23,19 @@ export default function Colophon() {
       <p>
         音乐收在一只纸袋里，播放时光盘才会转动。文字旁可以留一点补充，日记搜索从小入口展开；足够长的文章才出现页边阅读刻度。细节随着内容生长，短短两句话也能自在地放在这里。
       </p>
-      <h2>来处与致谢</h2>
+      <h2>代码与内容</h2>
       <p>
-        这个站点最初基于{" "}
+        现在的页面、阅读与相册交互，以及本地内容工作台，围绕这个网站独立实现。自有代码保留权利，照片和日记也留给生活本身。代码的使用范围与历史版本说明见{" "}
         <a
-          href="https://github.com/heiehiehi/XinghuisamaBlogs"
+          href="https://github.com/SparkHello/sparink-homepage/blob/main/NOTICE.md"
           target="_blank"
           rel="noreferrer"
         >
-          XingHuiSama 的 XHBlogs
+          仓库中的来源与许可记录
         </a>{" "}
-        构建。本次重新设计了页面、导航、视觉和交互，仍沿用部分内容与服务基础。原有代码的{" "}
-        <a
-          href="https://creativecommons.org/licenses/by-nc/4.0/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          CC BY-NC 4.0 许可
-        </a>
-        及署名继续保留在仓库中。
+        。开源框架、字体和图标继续遵循各自的许可。
       </p>
+      <h2>设计参考</h2>
       <p>
         视觉研究参考了{" "}
         <a href="https://linear.app/now/how-we-redesigned-the-linear-ui">
